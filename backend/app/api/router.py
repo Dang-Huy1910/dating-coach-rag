@@ -5,7 +5,7 @@ from uuid import UUID
 from fastapi import APIRouter, HTTPException, Request
 from sse_starlette.sse import EventSourceResponse
 
-from backend.app.coach import IndexNotReadyError, handle
+from backend.app.coach import IndexNotReadyError, LLMProviderError, handle
 from backend.app.config import DISCLAIMER_TEXT
 from backend.app.models import (
     AskRequest,
@@ -98,6 +98,10 @@ def _run(request: Request, session_id: str, intent, user_text: str, extra: str =
             status_code=400,
             detail="Thư viện kiến thức chưa sẵn sàng. Hãy chạy ingest rồi hỏi lại.",
         ) from exc
+    except LLMProviderError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=str(exc)) from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
 
 
 @router.post("/v1/sessions/{session_id}/ask", response_model=CoachReply)

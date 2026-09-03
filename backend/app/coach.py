@@ -27,29 +27,42 @@ def _provider(settings) -> str:
     return (settings.llm_provider or "groq").strip().lower()
 
 
+class LLMProviderError(RuntimeError):
+    """Raised when the upstream LLM provider fails in a user-visible way."""
+
+    def __init__(self, message: str, *, status_code: int = 502):
+        super().__init__(message)
+        self.status_code = status_code
+
+
 def _complete_groq(prompt: str, settings) -> str:
     if not settings.groq_api_key:
-        raise RuntimeError("GROQ_API_KEY is missing")
+        raise LLMProviderError("GROQ_API_KEY is missing", status_code=500)
     from groq import Groq
 
-    client = Groq(api_key=settings.groq_api_key)
-    response = client.chat.completions.create(
-        model=settings.groq_model,
-        messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": prompt},
-        ],
-        temperature=0.4,
-    )
+    try:
+        client = Groq(api_key=settings.groq_api_key)
+        response = client.chat.completions.create(
+            model=settings.groq_model,
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": prompt},
+            ],
+            temperature=0.4,
+        )
+    except LLMProviderError:
+        raise
+    except Exception as exc:  # noqa: BLE001 — surface provider failures to API layer
+        raise LLMProviderError(f"Groq API lỗi: {exc}", status_code=502) from exc
     return response.choices[0].message.content or ""
 
 
 def _complete_gemini(prompt: str, settings) -> str:
     if not settings.gemini_api_key:
-        raise RuntimeError("GEMINI_API_KEY is missing")
+        raise LLMProviderError("GEMINI_API_KEY is missing", status_code=500)
     import httpx
 
-    model = (settings.gemini_model or "gemini-2.0-flash").strip()
+    model = (settings.gemini_model or "gemini-flash-lite-latest").strip()
     url = (
         f"https://generativelanguage.googleapis.com/v1beta/models/"
         f"{model}:generateContent"
@@ -67,13 +80,24 @@ def _complete_gemini(prompt: str, settings) -> str:
         )
     if response.status_code >= 400:
         detail = response.text[:500]
-        raise RuntimeError(f"Gemini API error {response.status_code}: {detail}")
+        if response.status_code == 429:
+            raise LLMProviderError(
+                "Gemini đang hết hạn mức (quota). Đợi vài phút hoặc đổi model/provider.",
+                status_code=429,
+            )
+        raise LLMProviderError(
+            f"Gemini API lỗi {response.status_code}: {detail}",
+            status_code=502,
+        )
     data = response.json()
     try:
         parts = data["candidates"][0]["content"]["parts"]
         return "".join(str(p.get("text", "")) for p in parts).strip()
     except (KeyError, IndexError, TypeError) as exc:
-        raise RuntimeError(f"Unexpected Gemini response: {data!r}") from exc
+        raise LLMProviderError(
+            f"Phản hồi Gemini không hợp lệ: {data!r}",
+            status_code=502,
+        ) from exc
 
 
 def complete(prompt: str) -> str:

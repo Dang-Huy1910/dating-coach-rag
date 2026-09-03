@@ -1,5 +1,4 @@
 import React from 'react';
-import { DisclaimerBar } from './DisclaimerBar';
 import { useSession } from '../context/SessionContext';
 import { Lock, PenTool, RotateCcw } from 'lucide-react';
 
@@ -34,8 +33,6 @@ export const Header: React.FC<HeaderProps> = ({ currentMode, onModeChange, onRes
 
   return (
     <header className="fixed top-0 left-0 w-full z-40 bg-paper/90 backdrop-blur-md border-b border-paper-border shadow-[0_1px_8px_rgba(0,0,0,0.03)]">
-      <DisclaimerBar />
-
       <div className="h-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
         {/* Brand */}
         <button

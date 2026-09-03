@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { SessionProvider, useSession } from './context/SessionContext';
 import { Header, AppMode } from './components/Header';
+import { DisclaimerBar } from './components/DisclaimerBar';
 import { HealthNotice } from './components/HealthNotice';
 import { Toast } from './components/Toast';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -76,7 +77,7 @@ const AppContent: React.FC = () => {
         onResetSessionNotify={() => showToast('Đã khởi tạo phiên tư vấn mới.')}
       />
 
-      <div className="pt-28 sm:pt-24 w-full flex-1">
+      <div className="pt-24 sm:pt-20 w-full flex-1">
         <HealthNotice />
         <main className="w-full px-4 sm:px-6 lg:px-8 py-8 flex-1">
           {renderCurrentView()}
@@ -86,14 +87,15 @@ const AppContent: React.FC = () => {
       <Toast message={toastMessage} />
 
       {/* Footer */}
-      <footer className="w-full bg-paper-card border-t border-paper-border py-10 shadow-[0_-1px_8px_rgba(0,0,0,0.02)]">
-        <div className="max-w-4xl mx-auto px-4 text-center flex flex-col items-center gap-2">
+      <footer className="w-full bg-paper-card/80 border-t border-paper-border/80 py-8">
+        <div className="max-w-4xl mx-auto px-4 text-center flex flex-col items-center gap-3">
           <p className="font-editorial text-lg sm:text-xl text-charcoal italic leading-relaxed">
             “Chậm lại để hiểu mình trước khi bước vào thế giới của người khác.”
           </p>
-          <p className="text-xs text-charcoal-muted font-mono mt-1">
+          <p className="text-xs text-charcoal-muted font-mono">
             © Coach Dating Communication Lab. RAG-grounded relationship discernment workspace.
           </p>
+          <DisclaimerBar />
         </div>
       </footer>
     </div>

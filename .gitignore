@@ -15,8 +15,11 @@ __pycache__/
 
 # Vector / local data artifacts
 data/indexes/
+data/index/*
+!data/index/.gitkeep
 *.faiss
 *.pkl
+*.bin
 
 # IDE / OS
 .idea/

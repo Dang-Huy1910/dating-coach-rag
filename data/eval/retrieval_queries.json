@@ -1,0 +1,92 @@
+[
+  {
+    "id": "bio-concrete",
+    "query": "Bio hẹn hò ngắn nên viết thế nào cho cụ thể?",
+    "expected_source_ids": ["01-profile-bio", "06-bio-advanced"]
+  },
+  {
+    "id": "bio-length",
+    "query": "Bio bao nhiêu ký tự là đủ trên app hẹn hò?",
+    "expected_source_ids": ["01-profile-bio", "06-bio-advanced"]
+  },
+  {
+    "id": "opener-hiking",
+    "query": "Tin nhắn mở đầu opener dựa vào bio thích leo núi chạy bộ",
+    "expected_source_ids": ["02-openers", "07-public-profile-context"]
+  },
+  {
+    "id": "opener-mutual-friend",
+    "query": "Opener khi có bạn chung sự kiện ngoài đời",
+    "expected_source_ids": ["02-openers"]
+  },
+  {
+    "id": "pacing-slow",
+    "query": "Nên chat chậm thế nào để không tạo áp lực?",
+    "expected_source_ids": ["03-pacing"]
+  },
+  {
+    "id": "pacing-second-message",
+    "query": "Đối phương trả lời ngắn, có nên nhắn tiếp ngay không?",
+    "expected_source_ids": ["03-pacing", "02-openers"]
+  },
+  {
+    "id": "boundaries-say-no",
+    "query": "Từ chối lịch sự gặp đêm khuya ranh giới đồng thuận",
+    "expected_source_ids": ["04-boundaries"]
+  },
+  {
+    "id": "boundaries-consent",
+    "query": "Khi nào nên dừng chủ đề thân mật trong tin nhắn?",
+    "expected_source_ids": ["04-boundaries"]
+  },
+  {
+    "id": "red-flags-info",
+    "query": "Dấu hiệu cảnh báo thông tin khi chat hẹn hò là gì?",
+    "expected_source_ids": ["05-red-flags"]
+  },
+  {
+    "id": "red-flags-control",
+    "query": "Người kia kiểm soát lịch và ghen vô lý thì sao?",
+    "expected_source_ids": ["05-red-flags", "04-boundaries"]
+  },
+  {
+    "id": "bio-avoid-slogans",
+    "query": "Tại sao không nên viết bio toàn khẩu hiệu sống hết mình?",
+    "expected_source_ids": ["01-profile-bio", "06-bio-advanced"]
+  },
+  {
+    "id": "profile-public-paste",
+    "query": "Dùng bio caption công khai đã thấy để gợi ý opener không theo dõi",
+    "expected_source_ids": ["07-public-profile-context", "02-openers"]
+  },
+  {
+    "id": "profile-vs-private",
+    "query": "Tài khoản riêng tư thì coach profile thế nào?",
+    "expected_source_ids": ["07-public-profile-context"]
+  },
+  {
+    "id": "opener-avoid-creepy",
+    "query": "Opener nào tránh kiểu theo dõi story quá nhiều?",
+    "expected_source_ids": ["07-public-profile-context", "02-openers", "04-boundaries"]
+  },
+  {
+    "id": "message-invite-clear",
+    "query": "Nhịp hội thoại mời cà phê rõ ràng tôn trọng ranh giới từ chối",
+    "expected_source_ids": ["03-pacing", "04-boundaries", "02-openers"]
+  },
+  {
+    "id": "bio-invite-hook",
+    "query": "Thêm lời mời nhẹ vào bio hẹn hò",
+    "expected_source_ids": ["01-profile-bio", "06-bio-advanced"]
+  },
+  {
+    "id": "pacing-first-meet",
+    "query": "Lần đầu gặp nên chọn chỗ đông người ban ngày",
+    "expected_source_ids": ["04-boundaries", "03-pacing"]
+  },
+  {
+    "id": "red-flags-money",
+    "query": "Xin tiền sớm khi mới chat có phải dấu hiệu xấu không?",
+    "expected_source_ids": ["05-red-flags"]
+  }
+]

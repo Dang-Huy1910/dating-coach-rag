@@ -46,7 +46,14 @@ Tests (LLM mocked; hash embedder):
 DATING_COACH_EMBEDDER=hash pytest
 ```
 
-See `specs/001-dating-coach-rag/quickstart.md` and `specs/003-public-profile-context/quickstart.md`.
+Quality + retrieval eval report (portfolio / reviewer sitting):
+
+```bash
+DATING_COACH_EMBEDDER=hash python -m backend.app.eval.report
+# writes docs/EVAL.md — pass rate, safety refusals, Hit@4 / MRR
+```
+
+See `docs/EVAL.md`, `specs/001-dating-coach-rag/quickstart.md`, `specs/003-public-profile-context/quickstart.md`, and `specs/004-coach-eval-report/`.
 
 ## Scope v1 (in)
 

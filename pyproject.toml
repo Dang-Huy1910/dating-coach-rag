@@ -34,6 +34,7 @@ embed = [
 
 [project.scripts]
 dating-coach-ingest = "backend.app.rag.ingest:main"
+dating-coach-eval = "backend.app.eval.report:main"
 
 [tool.setuptools.packages.find]
 include = ["backend*"]

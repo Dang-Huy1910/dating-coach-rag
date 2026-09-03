@@ -16,9 +16,9 @@ Coaching answers MUST be grounded in retrieved knowledge from a curated corpus. 
 
 ### III. Backend-First Product Core
 
-The FastAPI (or equivalent) backend is the system of record for chat, analysis, and ingestion. The UI is a thin client (Streamlit preferred for v1). New capabilities ship as API endpoints first; UI follows only when needed for demo.
+The FastAPI (or equivalent) backend is the system of record for chat, analysis, and ingestion. The UI is a thin **React** client that talks to the API over HTTP only — no direct LLM, FAISS, or knowledge-base access from the browser. New capabilities ship as API endpoints first; UI follows only when needed for demo.
 
-**Rationale**: Matches the builder’s strengths (RAG + Backend) and keeps the portfolio technically serious.
+**Rationale**: Matches the builder’s strengths (RAG + Backend). React is the demo UI so screens can be designed (Stitch) and implemented separately without changing the coaching core.
 
 ### IV. Safety, Ethics & Privacy
 
@@ -50,4 +50,6 @@ Prefer the smallest stack that demonstrates RAG + API well: local vector store (
 
 This constitution supersedes informal preferences and README slogans when they conflict. Amendments require updating this file (version bump + date) and a short note in the commit message. Any plan that violates Principles II–IV MUST be rejected or rewritten before implementation.
 
-**Version**: 1.0.0 | **Ratified**: 2026-09-03 | **Last Amended**: 2026-09-03
+**Version**: 1.1.0 | **Ratified**: 2026-09-03 | **Last Amended**: 2026-09-03
+
+**1.1.0**: Principle III — thin UI is React (HTTP-only), not Streamlit.

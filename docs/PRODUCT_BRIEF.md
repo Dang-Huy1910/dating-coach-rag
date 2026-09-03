@@ -14,7 +14,7 @@ A personal **Dating Coach Chatbot** that:
 2. Helps rewrite a **profile / bio** draft.
 3. Suggests **openers** for a given context (app, mutual friend, etc.).
 4. **Analyzes a message draft** (tone, clarity, risk) and suggests revisions.
-5. Exposes capabilities through a **Backend API**; UI is secondary.
+5. Exposes capabilities through a **Backend API**; UI is a thin React client (Streamlit only as a temporary demo).
 
 ## Target user (v1)
 

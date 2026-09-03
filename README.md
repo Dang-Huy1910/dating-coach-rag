@@ -8,13 +8,47 @@ Not a Tinder clone. Not an AI girlfriend. This is a coach that helps with profil
 
 > Chatbot hỗ trợ hẹn hò thông minh: tư vấn profile, gợi ý cách nhắn tin và phân tích hội thoại bằng RAG từ knowledge base đã kiểm duyệt.
 
+## Run locally
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e ".[dev]"
+# Optional semantic embeddings (downloads MiniLM): pip install -e ".[embed]"
+cp .env.example .env   # set GROQ_API_KEY
+DATING_COACH_EMBEDDER=hash python -m backend.app.rag.ingest
+# or DATING_COACH_EMBEDDER=minilm after installing .[embed]
+```
+
+API (system of record):
+
+```bash
+uvicorn backend.app.main:app --reload --host 127.0.0.1 --port 8000
+```
+
+Stopgap UI (Streamlit, until React):
+
+```bash
+streamlit run frontend/app.py
+```
+
+Target UI is **React + Vite** (`http://127.0.0.1:5173`), HTTP-only to the API. Design: `docs/STITCH_PROMPT.md`. Implement later with Antigravity: `docs/ANTIGRAVITY_FE.md`.
+
+Tests (LLM mocked; hash embedder):
+
+```bash
+DATING_COACH_EMBEDDER=hash pytest
+```
+
+See `specs/001-dating-coach-rag/quickstart.md` for the golden demo sitting.
+
 ## Scope v1 (in)
 
-- RAG over curated dating guides (Markdown/PDF)
-- Backend API (FastAPI): chat + analyze message + session
-- Minimal chat UI (Streamlit)
+- RAG over curated dating guides (Markdown)
+- Backend API (FastAPI): session, ask, rewrite-bio, analyze-message, openers
+- Thin chat UI (React; Streamlit stopgap)
 - Cite sources; refuse / hedge when knowledge is missing
-- Safety: no matchmaking of real people, no storing intimate user data by default
+- Safety: no matchmaking of real people, no NSFW companion, no therapy claims
 
 ## Scope v1 (out)
 
@@ -23,34 +57,15 @@ Not a Tinder clone. Not an AI girlfriend. This is a coach that helps with profil
 - Voice, WhatsApp, mobile app
 - 18+ companion / NSFW roleplay
 
-## Stack intent (locked later in Spec Kit plan)
+## Stack
 
-| Layer | Preference |
-|-------|------------|
-| RAG | Chunk → embed → FAISS (local) → retrieve → LLM |
-| Backend | FastAPI + streaming |
-| LLM | Groq or Gemini (API) |
-| UI | Streamlit (thin) |
+| Layer | Choice |
+|-------|--------|
+| RAG | Chunk → MiniLM → FAISS (local) → retrieve → Groq |
+| Backend | FastAPI + optional SSE |
+| LLM | Groq or Gemini (env `LLM_PROVIDER`) |
+| UI | React + Vite (HTTP only); Streamlit stopgap |
 
-## Spec Kit workflow
+## Spec Kit
 
-This repo was initialized with [GitHub Spec Kit](https://github.com/github/spec-kit) + **Grok Build** integration.
-
-**Do specs before code.** Suggested order:
-
-1. `/speckit-constitution` — project principles (seed exists; refine if needed)
-2. `/speckit-specify` — feature spec from the prompt in `docs/SPECKIT_START.md`
-3. `/speckit-clarify` — optional, de-risk ambiguities
-4. `/speckit-plan` — tech plan
-5. `/speckit-tasks` — task breakdown
-6. `/speckit-implement` — build
-
-See:
-
-- `docs/PRODUCT_BRIEF.md` — product vision
-- `docs/SPECKIT_START.md` — copy-paste prompts for Spec Kit skills
-- `.specify/memory/constitution.md` — non-negotiable principles
-
-## Status
-
-Scaffold + Spec Kit ready. **No application code yet** — start with Spec Kit.
+Feature artifacts: `specs/001-dating-coach-rag/`. Constitution: `.specify/memory/constitution.md`.

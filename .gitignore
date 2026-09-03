@@ -15,8 +15,11 @@ __pycache__/
 
 # Vector / local data artifacts
 data/indexes/
+data/index/*
+!data/index/.gitkeep
 *.faiss
 *.pkl
+*.bin
 
 # IDE / OS
 .idea/
@@ -25,7 +28,18 @@ data/indexes/
 
 # Spec Kit machine-local pointer (also listed under .specify/.gitignore)
 .specify/feature.json
+.specify/extensions/.cache/
 
-# Grok local runtime (keep committed skills)
+# Grok local runtime (keep committed Spec Kit skills under .grok/skills/)
 .grok/*
 !.grok/skills/
+
+# Local AI assistant skills (ui-ux-pro-max, Antigravity, Gemini CLI) — install per machine
+.agents/
+.gemini/
+
+# Node / Frontend
+node_modules/
+dist/
+.vite/
+*.local

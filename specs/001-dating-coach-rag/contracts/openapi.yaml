@@ -1,0 +1,314 @@
+openapi: 3.1.0
+info:
+  title: Dating Coach RAG API
+  version: 0.1.0
+  description: >
+    System of record for coaching sessions. Thin chat clients call this API.
+    JSON is the test and default surface. SSE is optional on /ask.
+servers:
+  - url: http://127.0.0.1:8000
+    description: Local demo
+tags:
+  - name: health
+  - name: sessions
+  - name: coaching
+paths:
+  /health:
+    get:
+      tags: [health]
+      summary: Liveness
+      operationId: getHealth
+      responses:
+        "200":
+          description: Process is up
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+  /v1/disclaimer:
+    get:
+      tags: [health]
+      summary: Standing not-therapy / not-matchmaking notice
+      operationId: getDisclaimer
+      responses:
+        "200":
+          description: Disclaimer text
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DisclaimerResponse"
+  /v1/sessions:
+    post:
+      tags: [sessions]
+      summary: Create an ephemeral coaching session
+      operationId: createSession
+      responses:
+        "201":
+          description: Session created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionResponse"
+  /v1/sessions/{session_id}:
+    parameters:
+      - $ref: "#/components/parameters/SessionId"
+    get:
+      tags: [sessions]
+      summary: Fetch session metadata (no durable message archive)
+      operationId: getSession
+      responses:
+        "200":
+          description: Session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags: [sessions]
+      summary: Drop session from memory
+      operationId: deleteSession
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /v1/sessions/{session_id}/ask:
+    post:
+      tags: [coaching]
+      summary: Ask a grounded coaching question (User Story 1)
+      operationId: askCoach
+      parameters:
+        - $ref: "#/components/parameters/SessionId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AskRequest"
+      responses:
+        "200":
+          description: Coach reply (JSON) or SSE if stream=true
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CoachReply"
+            text/event-stream:
+              schema:
+                type: string
+                description: Events named token, citation, done, refusal
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /v1/sessions/{session_id}/rewrite-bio:
+    post:
+      tags: [coaching]
+      summary: Rewrite a profile/bio draft (User Story 2)
+      operationId: rewriteBio
+      parameters:
+        - $ref: "#/components/parameters/SessionId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DraftRequest"
+      responses:
+        "200":
+          description: Suggestions plus improved bio
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CoachReply"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /v1/sessions/{session_id}/analyze-message:
+    post:
+      tags: [coaching]
+      summary: Analyze and rewrite a message draft (User Story 3)
+      operationId: analyzeMessage
+      parameters:
+        - $ref: "#/components/parameters/SessionId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DraftRequest"
+      responses:
+        "200":
+          description: Tone/clarity/risk notes plus revised message
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CoachReply"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /v1/sessions/{session_id}/openers:
+    post:
+      tags: [coaching]
+      summary: Suggest first-message openers (User Story 4)
+      operationId: suggestOpeners
+      parameters:
+        - $ref: "#/components/parameters/SessionId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OpenersRequest"
+      responses:
+        "200":
+          description: At least two opener options when allowed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CoachReply"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+components:
+  parameters:
+    SessionId:
+      name: session_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  responses:
+    BadRequest:
+      description: Empty, whitespace-only, or oversize input
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    NotFound:
+      description: Unknown session
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+  schemas:
+    HealthResponse:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [ok]
+        index_ready:
+          type: boolean
+    DisclaimerResponse:
+      type: object
+      required: [text]
+      properties:
+        text:
+          type: string
+    SessionResponse:
+      type: object
+      required: [id, created_at, disclaimer, turn_count]
+      properties:
+        id:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+        disclaimer:
+          type: string
+        turn_count:
+          type: integer
+          minimum: 0
+    AskRequest:
+      type: object
+      required: [question]
+      properties:
+        question:
+          type: string
+          minLength: 1
+          maxLength: 8000
+        stream:
+          type: boolean
+          default: false
+    DraftRequest:
+      type: object
+      required: [draft]
+      properties:
+        draft:
+          type: string
+          minLength: 1
+          maxLength: 8000
+        notes:
+          type: string
+          maxLength: 2000
+          description: Optional extra context (app, audience)
+    OpenersRequest:
+      type: object
+      required: [context]
+      properties:
+        context:
+          type: string
+          minLength: 1
+          maxLength: 8000
+          description: First-contact setting without asking the product to match real people
+    Citation:
+      type: object
+      required: [source_id, title, path, score]
+      properties:
+        source_id:
+          type: string
+        title:
+          type: string
+        heading:
+          type: string
+          nullable: true
+        path:
+          type: string
+        score:
+          type: number
+          format: float
+    CoachReply:
+      type: object
+      required: [reply, citations, refused, hedged, disclaimer, intent]
+      properties:
+        reply:
+          type: string
+        citations:
+          type: array
+          items:
+            $ref: "#/components/schemas/Citation"
+        refused:
+          type: boolean
+        hedged:
+          type: boolean
+        disclaimer:
+          type: string
+        intent:
+          type: string
+          enum: [ask, rewrite_bio, analyze_message, openers]
+        improved_draft:
+          type: string
+          nullable: true
+          description: Copy-ready bio or message when intent is rewrite_bio or analyze_message
+        openers:
+          type: array
+          items:
+            type: string
+          description: Present when intent is openers and not fully refused
+    ErrorResponse:
+      type: object
+      required: [detail]
+      properties:
+        detail:
+          type: string
+        code:
+          type: string
+          enum: [empty_input, too_long, not_found, index_not_ready]

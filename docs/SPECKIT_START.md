@@ -2,11 +2,15 @@
 
 Run these from a Grok session whose **cwd is this repo** (`dating-coach-rag`).
 
+This guide follows the [Spec Kit](https://github.com/github/spec-kit) **v1.0** SDD quickstart. Grok skills use hyphens (`/speckit-specify`); upstream docs often show dots (`/speckit.specify`) — same commands.
+
 Constitution is already seeded in `.specify/memory/constitution.md`. You can refine it, or skip straight to specify if you accept the seed.
 
 ---
 
-## Step 0 (optional) — refine constitution
+## Core workflow
+
+### 1 — Establish principles (one-time)
 
 ```
 /speckit-constitution
@@ -18,7 +22,7 @@ Paste or say:
 
 ---
 
-## Step 1 — create the feature specification (do this next)
+### 2 — Create the feature specification (do this next)
 
 ```
 /speckit-specify
@@ -30,16 +34,56 @@ Paste this description (what/why only — Spec Kit will ask about tech in plan l
 
 ---
 
-## Step 2+ (after specify)
+### 3 — Technical plan
 
-| Order | Command | Purpose |
-|------:|---------|---------|
-| 2 | `/speckit-clarify` | Optional — resolve up to 5 ambiguities |
-| 3 | `/speckit-plan` | Tech plan (FastAPI, FAISS, LLM, Streamlit) |
-| 4 | `/speckit-checklist` | Optional quality gate |
-| 5 | `/speckit-tasks` | Ordered implementation tasks |
-| 6 | `/speckit-analyze` | Optional consistency check |
-| 7 | `/speckit-implement` | Build code from tasks |
+```
+/speckit-plan
+```
+
+Provide stack choices when prompted (intent: FastAPI + streaming, local FAISS RAG, Groq or Gemini, thin Streamlit UI).
+
+---
+
+### 4 — Task breakdown
+
+```
+/speckit-tasks
+```
+
+---
+
+### 5 — Implement
+
+```
+/speckit-implement
+```
+
+---
+
+### 6 — Converge
+
+```
+/speckit-converge
+```
+
+Assess the codebase against spec, plan, and tasks; append any remaining unbuilt work as new tasks.
+
+**Repeat steps 4 and 5** until `/speckit-converge` reports **Converged**.
+
+---
+
+## Optional commands
+
+| When | Command | Purpose |
+|------|---------|---------|
+| After specify, **before** plan | `/speckit-clarify` | Resolve up to ~5 ambiguities (recommended) |
+| After plan / around tasks | `/speckit-checklist` | Quality checklist for requirements completeness |
+| After tasks, **before** implement | `/speckit-analyze` | Cross-artifact consistency & coverage |
+| After tasks (tracking) | `/speckit-taskstoissues` | Sync tasks to GitHub issues |
+
+Suggested insert points if you use the optionals:
+
+1. constitution → 2. specify → **clarify** → 3. plan → **checklist** → 4. tasks → **analyze** → 5. implement → 6. converge → (loop 4–5)
 
 ---
 
@@ -48,3 +92,4 @@ Paste this description (what/why only — Spec Kit will ask about tech in plan l
 - Prefer working in this repo only; do not invent university-chatbot scope.
 - Product context lives in `docs/PRODUCT_BRIEF.md`.
 - After `/speckit-specify`, feature artifacts appear under `specs/`.
+- Opt-in upstream extensions (`bug`, `assess`) are **not** installed here; add later with `specify extension add <name>` if needed.

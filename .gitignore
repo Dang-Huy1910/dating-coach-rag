@@ -1,0 +1,31 @@
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Env & secrets
+.env
+.env.*
+!.env.example
+
+# Vector / local data artifacts
+data/indexes/
+*.faiss
+*.pkl
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+
+# Spec Kit machine-local pointer (also listed under .specify/.gitignore)
+.specify/feature.json
+
+# Grok local runtime (keep committed skills)
+.grok/*
+!.grok/skills/

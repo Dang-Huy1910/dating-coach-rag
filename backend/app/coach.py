@@ -23,10 +23,11 @@ def retrieve_chunks(query: str) -> list[Hit]:
     return retrieve(query)
 
 
-def complete(prompt: str) -> str:
-    settings = get_settings()
-    if settings.llm_provider != "groq":
-        raise RuntimeError(f"Unsupported LLM_PROVIDER={settings.llm_provider}")
+def _provider(settings) -> str:
+    return (settings.llm_provider or "groq").strip().lower()
+
+
+def _complete_groq(prompt: str, settings) -> str:
     if not settings.groq_api_key:
         raise RuntimeError("GROQ_API_KEY is missing")
     from groq import Groq
@@ -43,27 +44,53 @@ def complete(prompt: str) -> str:
     return response.choices[0].message.content or ""
 
 
-def complete_stream(prompt: str) -> Iterator[str]:
-    settings = get_settings()
-    if not settings.groq_api_key:
-        raise RuntimeError("GROQ_API_KEY is missing")
-    from groq import Groq
+def _complete_gemini(prompt: str, settings) -> str:
+    if not settings.gemini_api_key:
+        raise RuntimeError("GEMINI_API_KEY is missing")
+    import httpx
 
-    client = Groq(api_key=settings.groq_api_key)
-    stream = client.chat.completions.create(
-        model=settings.groq_model,
-        messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": prompt},
-        ],
-        temperature=0.4,
-        stream=True,
+    model = (settings.gemini_model or "gemini-2.0-flash").strip()
+    url = (
+        f"https://generativelanguage.googleapis.com/v1beta/models/"
+        f"{model}:generateContent"
     )
-    for chunk in stream:
-        delta = chunk.choices[0].delta
-        token = getattr(delta, "content", None)
-        if token:
-            yield token
+    payload = {
+        "system_instruction": {"parts": [{"text": SYSTEM_PROMPT}]},
+        "contents": [{"role": "user", "parts": [{"text": prompt}]}],
+        "generationConfig": {"temperature": 0.4},
+    }
+    with httpx.Client(timeout=60.0) as client:
+        response = client.post(
+            url,
+            params={"key": settings.gemini_api_key},
+            json=payload,
+        )
+    if response.status_code >= 400:
+        detail = response.text[:500]
+        raise RuntimeError(f"Gemini API error {response.status_code}: {detail}")
+    data = response.json()
+    try:
+        parts = data["candidates"][0]["content"]["parts"]
+        return "".join(str(p.get("text", "")) for p in parts).strip()
+    except (KeyError, IndexError, TypeError) as exc:
+        raise RuntimeError(f"Unexpected Gemini response: {data!r}") from exc
+
+
+def complete(prompt: str) -> str:
+    settings = get_settings()
+    provider = _provider(settings)
+    if provider == "groq":
+        return _complete_groq(prompt, settings)
+    if provider in {"gemini", "google"}:
+        return _complete_gemini(prompt, settings)
+    raise RuntimeError(f"Unsupported LLM_PROVIDER={settings.llm_provider}")
+
+
+def complete_stream(prompt: str) -> Iterator[str]:
+    # Demo path uses JSON replies; stream yields the full completion once.
+    text = complete(prompt)
+    if text:
+        yield text
 
 
 def _history(store: SessionStore, session_id: str) -> str:

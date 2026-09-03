@@ -30,13 +30,15 @@ Terminal A — API (system of record):
 uvicorn backend.app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-Terminal B — thin chat UI:
+Terminal B — stopgap UI (until React):
 
 ```bash
 streamlit run frontend/app.py
 ```
 
-UI talks only to `http://127.0.0.1:8000`. Open the Streamlit URL, read the disclaimer banner, start chatting.
+Target UI: React + Vite on `:5173`, HTTP only to `http://127.0.0.1:8000`. See `docs/STITCH_PROMPT.md` and `docs/ANTIGRAVITY_FE.md`.
+
+UI talks only to the API. Read the disclaimer, start chatting.
 
 ## Automated checks
 

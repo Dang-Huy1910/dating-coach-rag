@@ -42,7 +42,13 @@ def retrieve(query: str, top_k: int | None = None, min_score: float | None = Non
     embedder = get_embedder(settings.embedder_name)
     vector = embedder.embed([query])[0]
     k = top_k if top_k is not None else settings.retrieve_top_k
-    threshold = settings.retrieve_min_score if min_score is None else min_score
+    if min_score is not None:
+        threshold = min_score
+    elif settings.embedder_name == "hash":
+        # Token-hash vectors have lower cosine mass than MiniLM; keep demo usable.
+        threshold = min(settings.retrieve_min_score, 0.08)
+    else:
+        threshold = settings.retrieve_min_score
     hits: list[Hit] = []
     for score, chunk in store.search(vector, k):
         if score < threshold:

@@ -6,13 +6,13 @@
 
 ## Summary
 
-Ship a personal dating-communication coach: a **FastAPI** service is the system of record for ephemeral sessions, grounded Q&A, bio rewrite, message analysis, and openers. Retrieval uses **local sentence-transformers + FAISS** over a small curated Markdown corpus. Generation uses **Groq** (Gemini optional via env). A **Streamlit** chat is a thin client. Safety refusals, citations, and a not-therapy disclaimer are mandatory. No auth, no database, no matchmaking.
+Ship a personal dating-communication coach: a **FastAPI** service is the system of record for ephemeral sessions, grounded Q&A, bio rewrite, message analysis, and openers. Retrieval uses **local sentence-transformers + FAISS** over a small curated Markdown corpus. Generation uses **Groq or Gemini** via env. The demo UI is a thin **React** (Vite) client that only calls the API. A Streamlit `frontend/app.py` may remain as a stopgap until React ships. Safety refusals, citations, and a not-therapy disclaimer are mandatory. No auth, no database, no matchmaking.
 
 ## Technical Context
 
 **Language/Version**: Python 3.12
 
-**Primary Dependencies**: FastAPI, Uvicorn, Pydantic v2, sse-starlette, sentence-transformers (`all-MiniLM-L6-v2`), faiss-cpu, groq, python-dotenv, pydantic-settings, Streamlit, httpx
+**Primary Dependencies**: FastAPI, Uvicorn, Pydantic v2, sse-starlette, sentence-transformers (`all-MiniLM-L6-v2`), faiss-cpu, groq, python-dotenv, pydantic-settings, httpx. UI: React + Vite (HTTP client only). Streamlit optional stopgap.
 
 **Storage**: In-process session dict (ephemeral). Markdown corpus `data/knowledge/`. FAISS index + sidecar metadata `data/index/`. No RDBMS.
 
@@ -36,7 +36,7 @@ Ship a personal dating-communication coach: a **FastAPI** service is the system 
 |-----------|------|--------|
 | I. Spec-First | Feature `spec.md` exists before application code; this `plan.md` before implement | PASS — spec + plan artifacts only |
 | II. RAG-Grounded Coaching | Retrieve-then-generate; citations; refuse/hedge on weak retrieval; no invented studies | PASS — FAISS retrieve, score gate 0.35, citation schema, golden refuse case |
-| III. Backend-First | FastAPI is system of record; Streamlit only HTTP client | PASS — UI has no direct LLM calls |
+| III. Backend-First | FastAPI is system of record; React (or stopgap Streamlit) only HTTP client | PASS — UI has no direct LLM calls |
 | IV. Safety, Ethics & Privacy | Coach only; refuse matchmaking/NSFW/therapy; ephemeral sessions; disclaimer | PASS — SafetyVerdict + FR-009/011/012 in API |
 | V. Solo YAGNI | Local FAISS, one default LLM, no auth/admin/hybrid search | PASS — in-memory sessions, no extra search stack |
 
@@ -82,7 +82,9 @@ backend/
       index.py
       retrieve.py
 frontend/
-  app.py                    # Streamlit thin client
+  app.py                    # Streamlit stopgap until React
+  # Target UI (Antigravity / later): Vite + React talking to :8000
+  # CORS already allows localhost:5173
 data/
   knowledge/                # starter Markdown guides
   index/                    # generated FAISS + meta (gitignored binaries)
@@ -93,8 +95,12 @@ tests/
   unit/
 ```
 
-**Structure Decision**: Single Python repo (web service + thin UI), not a Node frontend and not a monorepo of many packages. Backend owns all coaching logic; `frontend/app.py` only calls HTTP.
+**Structure Decision**: Python backend remains the product core (`backend/`). Demo UI target is a **thin React app** (Vite, port 5173) that only calls `http://127.0.0.1:8000`. React is implemented separately (Stitch → Antigravity). Streamlit `frontend/app.py` is a temporary demo client, not the destination UI.
 
 ## Complexity Tracking
 
-> No constitution violations requiring justification.
+| Violation | Why Needed | Simpler Alternative Rejected Because |
+|-----------|------------|-------------------------------------|
+| React (Node) UI instead of Streamlit-only | Builder will design screens in Stitch and implement in Antigravity; portfolio UI should be a real web client | Streamlit is enough for API demo but not for the intended FE workflow |
+
+

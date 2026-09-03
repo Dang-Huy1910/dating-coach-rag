@@ -26,11 +26,13 @@ API (system of record):
 uvicorn backend.app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-Thin chat UI:
+Stopgap UI (Streamlit, until React):
 
 ```bash
 streamlit run frontend/app.py
 ```
+
+Target UI is **React + Vite** (`http://127.0.0.1:5173`), HTTP-only to the API. Design: `docs/STITCH_PROMPT.md`. Implement later with Antigravity: `docs/ANTIGRAVITY_FE.md`.
 
 Tests (LLM mocked; hash embedder):
 
@@ -44,7 +46,7 @@ See `specs/001-dating-coach-rag/quickstart.md` for the golden demo sitting.
 
 - RAG over curated dating guides (Markdown)
 - Backend API (FastAPI): session, ask, rewrite-bio, analyze-message, openers
-- Minimal chat UI (Streamlit)
+- Thin chat UI (React; Streamlit stopgap)
 - Cite sources; refuse / hedge when knowledge is missing
 - Safety: no matchmaking of real people, no NSFW companion, no therapy claims
 
@@ -61,8 +63,8 @@ See `specs/001-dating-coach-rag/quickstart.md` for the golden demo sitting.
 |-------|--------|
 | RAG | Chunk → MiniLM → FAISS (local) → retrieve → Groq |
 | Backend | FastAPI + optional SSE |
-| LLM | Groq (`llama-3.3-70b-versatile`) |
-| UI | Streamlit (HTTP client only) |
+| LLM | Groq or Gemini (env `LLM_PROVIDER`) |
+| UI | React + Vite (HTTP only); Streamlit stopgap |
 
 ## Spec Kit
 

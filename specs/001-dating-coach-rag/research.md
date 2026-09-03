@@ -78,13 +78,14 @@ All Technical Context unknowns resolved. Stack follows constitution (backend-fir
 
 ---
 
-## Decision: Layout = one Python repo, `backend/` service + `frontend/` Streamlit
+## Decision: Layout = Python `backend/` + thin React UI (Vite)
 
-**Rationale**: Backend is the system of record; UI is a thin client. One `pyproject.toml` at repo root keeps install simple (`pip install -e ".[dev]"`). No Node frontend.
+**Rationale**: Backend stays the system of record (RAG + safety + LLM). The destination demo UI is React so screens can be designed in Stitch and built in Antigravity without touching coaching logic. Browser talks only to `http://127.0.0.1:8000` (CORS includes `:5173`). Streamlit `frontend/app.py` is a stopgap, not the product UI.
 
 **Alternatives considered**:
-- Streamlit calling the LLM directly: violates backend-first.
-- React SPA: UI scope creep.
+- Streamlit-only: fastest API demo, but blocks the intended React/Stitch workflow.
+- Streamlit or React calling the LLM directly: violates backend-first.
+- Full Next.js + auth: YAGNI for a single demo user.
 
 ---
 

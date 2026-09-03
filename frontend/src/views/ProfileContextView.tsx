@@ -8,6 +8,16 @@ import { CoachBubble, CoachBubbleLoading } from '../components/CoachBubble';
 import { EmptyAiState } from '../components/EmptyAiState';
 import { SafetyBanner } from '../components/SafetyBanner';
 import {
+  ModeHeader,
+  ModePage,
+  modeCardClass,
+  modeInputClass,
+  modeLabelClass,
+  modeLabelMutedClass,
+  modePrimaryButtonClass,
+  modeTextareaClass,
+} from '../components/ModePage';
+import {
   AlertCircle,
   AtSign,
   BookOpen,
@@ -204,29 +214,19 @@ export const ProfileContextView: React.FC<ProfileContextViewProps> = ({ onToast 
   };
 
   return (
-    <div className="w-full max-w-5xl mx-auto space-y-8 pb-16">
-      <div className="space-y-2 border-b border-paper-border pb-6">
-        <div className="flex items-center gap-2 text-magenta-600">
-          <span className="w-2 h-2 rounded-full bg-neon-pink animate-pulse" />
-          <span className="text-xs font-mono font-bold uppercase tracking-widest text-magenta-700">
-            YouTube / Reddit public · Ảnh dán clipboard
-          </span>
-        </div>
-        <h1 className="font-editorial text-3xl sm:text-4xl text-charcoal font-normal">
-          Coach từ profile công khai bạn đã thấy
-        </h1>
-        <p className="text-sm text-charcoal-muted max-w-2xl leading-relaxed">
-          Link YouTube hoặc Reddit được đọc qua API công khai. Instagram không fetch. Handle chỉ
-          để ghi nhớ. Ảnh: upload hoặc Ctrl+V, bấm ảnh để thêm caption/bình luận.
-        </p>
-      </div>
+    <ModePage>
+      <ModeHeader
+        eyebrow="YouTube / Reddit public · Ảnh clipboard"
+        title="Coach từ profile công khai bạn đã thấy"
+        description="Link YouTube hoặc Reddit đọc qua API công khai. Instagram không fetch. Handle chỉ để ghi nhớ. Ảnh: upload hoặc Ctrl+V, bấm ảnh để thêm caption/bình luận."
+      />
 
-      <div className="bg-paper-card rounded-2xl shadow-sm border border-paper-border p-6 sm:p-7 space-y-5 relative overflow-hidden">
+      <div className={`${modeCardClass} space-y-5 relative overflow-hidden`}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-1.5">
             <label
               htmlFor="profile-handle"
-              className="text-xs font-bold uppercase tracking-wider text-charcoal flex items-center gap-1.5"
+              className={modeLabelClass}
             >
               <AtSign className="w-4 h-4 text-magenta-600" aria-hidden="true" />
               Handle (tuỳ chọn, chưa lưu)
@@ -238,14 +238,11 @@ export const ProfileContextView: React.FC<ProfileContextViewProps> = ({ onToast 
               maxLength={128}
               onChange={(e) => setHandle(e.target.value)}
               placeholder="@tên để ghi nhớ sitting"
-              className="w-full min-h-[44px] bg-paper-subtle text-charcoal text-sm px-4 rounded-xl outline-none focus:bg-paper-card focus:ring-2 focus:ring-magenta-500/20 focus:border-magenta-500 transition-all border border-paper-border"
+              className={modeInputClass}
             />
           </div>
           <div className="space-y-1.5">
-            <label
-              htmlFor="profile-url"
-              className="text-xs font-bold uppercase tracking-wider text-charcoal flex items-center gap-1.5"
-            >
+            <label htmlFor="profile-url" className={modeLabelClass}>
               <Link2 className="w-4 h-4 text-magenta-600" aria-hidden="true" />
               Link YouTube hoặc Reddit
             </label>
@@ -256,16 +253,13 @@ export const ProfileContextView: React.FC<ProfileContextViewProps> = ({ onToast 
               maxLength={500}
               onChange={(e) => setProfileUrl(e.target.value)}
               placeholder="https://youtube.com/@… hoặc reddit.com/user/…"
-              className="w-full min-h-[44px] bg-paper-subtle text-charcoal text-sm px-4 rounded-xl outline-none focus:bg-paper-card focus:ring-2 focus:ring-magenta-500/20 focus:border-magenta-500 transition-all border border-paper-border"
+              className={modeInputClass}
             />
           </div>
         </div>
 
         <div className="space-y-1.5">
-          <label
-            htmlFor="profile-relationship"
-            className="text-xs font-bold uppercase tracking-wider text-charcoal flex items-center gap-1.5"
-          >
+          <label htmlFor="profile-relationship" className={modeLabelClass}>
             <Heart className="w-4 h-4 text-magenta-600" aria-hidden="true" />
             Mối quan hệ đang tiến triển tới đâu?
           </label>
@@ -276,16 +270,13 @@ export const ProfileContextView: React.FC<ProfileContextViewProps> = ({ onToast 
             value={relationship}
             onChange={(e) => setRelationship(e.target.value)}
             placeholder="Ví dụ: mới follow, chưa nhắn / đã chat 1 tuần / đã gặp một lần cà phê…"
-            className="w-full bg-paper-subtle text-charcoal text-sm p-4 rounded-xl resize-none outline-none focus:bg-paper-card focus:ring-2 focus:ring-magenta-500/20 border border-paper-border leading-relaxed"
+            className={modeTextareaClass}
           />
         </div>
 
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <label
-              htmlFor="profile-visible"
-              className="text-xs font-bold uppercase tracking-wider text-charcoal"
-            >
+            <label htmlFor="profile-visible" className={modeLabelClass}>
               Bio / caption / ghi chú thêm
             </label>
             <span className="text-[11px] text-charcoal-muted font-mono">Tuỳ chọn nếu đã có link hoặc ảnh</span>
@@ -301,16 +292,14 @@ export const ProfileContextView: React.FC<ProfileContextViewProps> = ({ onToast 
               setAnalyzedAt(null);
             }}
             placeholder="Caption bạn thấy, hoặc ghi chú vibe — không bắt buộc nếu đã dán YouTube/Reddit hoặc ảnh."
-            className="w-full bg-paper-subtle text-charcoal text-sm p-4 rounded-xl resize-none outline-none focus:bg-paper-card focus:ring-2 focus:ring-magenta-500/20 focus:border-magenta-500 transition-all border border-paper-border leading-relaxed"
+            className={modeTextareaClass}
           />
         </div>
 
         <div className="space-y-2">
           <div className="flex items-center justify-between gap-2 flex-wrap">
-            <label
-              htmlFor="profile-shots"
-              className="text-xs font-bold uppercase tracking-wider text-charcoal flex items-center gap-1.5"
-            >
+            <label htmlFor="profile-shots" className={modeLabelClass}>
+
               <ImagePlus className="w-4 h-4 text-magenta-600" aria-hidden="true" />
               Ảnh bài / story
             </label>
@@ -361,10 +350,7 @@ export const ProfileContextView: React.FC<ProfileContextViewProps> = ({ onToast 
         </div>
 
         <div className="space-y-1.5">
-          <label
-            htmlFor="profile-question"
-            className="text-xs font-bold uppercase tracking-wider text-charcoal-muted"
-          >
+          <label htmlFor="profile-question" className={modeLabelMutedClass}>
             Bạn muốn coach điều gì?
           </label>
           <input
@@ -374,7 +360,7 @@ export const ProfileContextView: React.FC<ProfileContextViewProps> = ({ onToast 
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
             placeholder="Cách mở lời lịch sự…"
-            className="w-full min-h-[44px] bg-paper-subtle text-charcoal text-sm px-4 rounded-xl outline-none border border-paper-border focus:ring-2 focus:ring-magenta-500/20"
+            className={modeInputClass}
           />
         </div>
 
@@ -383,7 +369,7 @@ export const ProfileContextView: React.FC<ProfileContextViewProps> = ({ onToast 
           onClick={handleSubmit}
           disabled={isGenerating}
           aria-busy={isGenerating}
-          className="w-full min-h-[44px] bg-magenta-600 hover:bg-magenta-700 active:scale-[0.99] text-white py-3 px-6 rounded-xl text-xs sm:text-sm font-semibold shadow-glow-magenta transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          className={modePrimaryButtonClass}
         >
           <Sparkles className={`w-4 h-4 ${isGenerating ? 'animate-spin' : ''}`} aria-hidden="true" />
           <span>{isGenerating ? 'Đang coach…' : 'Nhờ coach'}</span>
@@ -580,6 +566,6 @@ export const ProfileContextView: React.FC<ProfileContextViewProps> = ({ onToast 
       )}
 
       <CitationModal citation={activeCitation} onClose={() => setActiveCitation(null)} />
-    </div>
+    </ModePage>
   );
 };

@@ -7,6 +7,7 @@ import { CitationModal } from '../components/CitationModal';
 import { CoachBubble, CoachBubbleLoading } from '../components/CoachBubble';
 import { CopyReadyCard } from '../components/CopyReadyCard';
 import { EmptyAiState } from '../components/EmptyAiState';
+import { ModeHeader, ModePage, modeCardClass, modeLabelClass } from '../components/ModePage';
 import { Sparkline } from '../components/Sparkline';
 import {
   Activity,
@@ -136,30 +137,21 @@ export const MessageView: React.FC<MessageViewProps> = ({ onToast }) => {
   };
 
   return (
-    <div className="w-full max-w-6xl mx-auto space-y-8 pb-16">
-      <div className="border-b border-paper-border pb-6 space-y-2">
-        <div className="flex items-center gap-2 text-magenta-600">
-          <span className="w-2 h-2 rounded-full bg-neon-pink animate-pulse" />
-          <span className="text-xs font-mono font-bold uppercase tracking-widest text-magenta-700">
-            Phòng thực nghiệm đối thoại • Pacing Dynamics
-          </span>
-        </div>
-        <h1 className="font-editorial text-3xl sm:text-4xl text-charcoal font-normal">
-          Phân tích tin nhắn trước khi gửi
-        </h1>
-        <p className="font-editorial text-base sm:text-lg text-charcoal-muted italic">
-          Dán tin sắp gửi — Coach (AI) phân tích tone, rõ ý, rủi ro giao tiếp và gợi ý bản viết lại.
-        </p>
-      </div>
+    <ModePage>
+      <ModeHeader
+        eyebrow="Phòng thực nghiệm đối thoại • Pacing"
+        title="Phân tích tin nhắn trước khi gửi"
+        description="Dán tin sắp gửi — Coach phân tích tone, rõ ý, rủi ro giao tiếp và gợi ý bản viết lại copy-ready."
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* Left: draft workbench */}
         <div className="lg:col-span-5 flex flex-col gap-6">
-          <div className="bg-paper-card rounded-2xl p-6 shadow-sm border border-paper-border space-y-4">
+          <div className={modeCardClass}>
             <div className="flex items-center justify-between">
               <label
                 htmlFor="message-draft"
-                className="text-xs font-bold text-charcoal uppercase tracking-wider flex items-center gap-1.5"
+                className={modeLabelClass}
               >
                 <MessageSquare className="w-4 h-4 text-magenta-600" aria-hidden="true" />
                 <span>Tin nhắn sắp gửi</span>
@@ -449,6 +441,6 @@ export const MessageView: React.FC<MessageViewProps> = ({ onToast }) => {
       </div>
 
       <CitationModal citation={activeCitation} onClose={() => setActiveCitation(null)} />
-    </div>
+    </ModePage>
   );
 };

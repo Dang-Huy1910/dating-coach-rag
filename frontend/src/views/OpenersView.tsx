@@ -6,6 +6,14 @@ import { AiStatusBadge } from '../components/AiStatusBadge';
 import { CitationModal } from '../components/CitationModal';
 import { CoachBubble, CoachBubbleLoading } from '../components/CoachBubble';
 import { EmptyAiState } from '../components/EmptyAiState';
+import {
+  ModeHeader,
+  ModePage,
+  modeCardClass,
+  modeLabelClass,
+  modeLabelMutedClass,
+  modePrimaryButtonClass,
+} from '../components/ModePage';
 import { SafetyBanner } from '../components/SafetyBanner';
 import {
   AlertCircle,
@@ -76,28 +84,19 @@ export const OpenersView: React.FC<OpenersViewProps> = ({ onToast, onNavigateToM
   };
 
   return (
-    <div className="w-full max-w-5xl mx-auto space-y-8 pb-16">
-      <div className="space-y-2 border-b border-paper-border pb-6">
-        <div className="flex items-center gap-2 text-magenta-600">
-          <span className="w-2 h-2 rounded-full bg-neon-pink animate-pulse" />
-          <span className="text-xs font-mono font-bold uppercase tracking-widest text-magenta-700">
-            Chế độ phân tích & kiến tạo • Thấu cảm hội thoại
-          </span>
-        </div>
-        <h1 className="font-editorial text-3xl sm:text-4xl text-charcoal font-normal">
-          Gợi ý Opener tự nhiên & khơi gợi kết nối
-        </h1>
-        <p className="text-sm text-charcoal-muted max-w-2xl leading-relaxed">
-          Opener do Coach AI gen từ ngữ cảnh bạn nhập — không dùng mẫu cứng sẵn.
-        </p>
-      </div>
+    <ModePage>
+      <ModeHeader
+        eyebrow="Chế độ kiến tạo • Opener"
+        title="Gợi ý opener tự nhiên & khơi gợi kết nối"
+        description="Opener do Coach AI gen từ ngữ cảnh bạn nhập — không dùng mẫu cứng sẵn."
+      />
 
-      <div className="bg-paper-card rounded-2xl shadow-sm border border-paper-border p-6 sm:p-7 space-y-5 relative overflow-hidden">
+      <div className={`${modeCardClass} space-y-5 relative overflow-hidden`}>
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <label
               htmlFor="opener-context"
-              className="text-xs font-bold uppercase tracking-wider text-charcoal flex items-center gap-1.5"
+              className={modeLabelClass}
             >
               <MessageCircle className="w-4 h-4 text-magenta-600" aria-hidden="true" />
               <span>Ngữ cảnh hoặc thông tin từ profile</span>
@@ -121,10 +120,7 @@ export const OpenersView: React.FC<OpenersViewProps> = ({ onToast, onNavigateToM
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
           <div className="space-y-1.5">
-            <label
-              htmlFor="opener-tone"
-              className="text-xs font-bold uppercase tracking-wider text-charcoal-muted"
-            >
+            <label htmlFor="opener-tone" className={modeLabelMutedClass}>
               Phong cách tiếp cận
             </label>
             <div className="relative">
@@ -148,7 +144,7 @@ export const OpenersView: React.FC<OpenersViewProps> = ({ onToast, onNavigateToM
             onClick={handleGenerate}
             disabled={isGenerating}
             aria-busy={isGenerating}
-            className="w-full min-h-[44px] bg-magenta-600 hover:bg-magenta-700 active:scale-[0.99] text-white py-3 px-6 rounded-xl text-xs sm:text-sm font-semibold shadow-glow-magenta transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            className={modePrimaryButtonClass}
           >
             <Sparkles
               className={`w-4 h-4 ${isGenerating ? 'animate-spin' : ''}`}
@@ -321,6 +317,6 @@ export const OpenersView: React.FC<OpenersViewProps> = ({ onToast, onNavigateToM
       </div>
 
       <CitationModal citation={activeCitation} onClose={() => setActiveCitation(null)} />
-    </div>
+    </ModePage>
   );
 };

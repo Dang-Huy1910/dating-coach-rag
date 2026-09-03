@@ -8,6 +8,7 @@ import { CoachBubble, CoachBubbleLoading } from '../components/CoachBubble';
 import { CopyReadyCard } from '../components/CopyReadyCard';
 import { EmptyAiState } from '../components/EmptyAiState';
 import { SafetyBanner } from '../components/SafetyBanner';
+import { ModeHeader, ModePage, modeCardClass, modeLabelClass } from '../components/ModePage';
 import {
   Bookmark,
   Edit3,
@@ -87,36 +88,26 @@ export const BioStudioView: React.FC<BioStudioViewProps> = ({ onToast }) => {
   };
 
   return (
-    <div className="w-full max-w-6xl mx-auto space-y-8 pb-16">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-paper-border pb-6">
-        <div>
-          <div className="flex items-center gap-1.5 text-magenta-600 mb-1">
-            <History className="w-4 h-4" aria-hidden="true" />
-            <span className="text-xs font-mono font-bold uppercase tracking-widest text-magenta-700">
-              Bio Refinement Studio
-            </span>
+    <ModePage>
+      <ModeHeader
+        eyebrow="Bio Refinement Studio"
+        title="Chỉnh sửa Bio & Hồ sơ hẹn hò"
+        description="Đánh giá & phân tích do Coach AI tạo từ đúng bio bạn dán — kèm bản viết lại copy-ready."
+        aside={
+          <div className="inline-flex items-center gap-2 bg-paper-card px-3.5 py-1.5 rounded-full border border-paper-border shadow-xs text-xs font-mono text-charcoal">
+            <History className="w-3.5 h-3.5 text-magenta-600" aria-hidden="true" />
+            <span>RAG · Dating profile</span>
           </div>
-          <h1 className="font-editorial text-3xl sm:text-4xl text-charcoal font-normal">
-            Chỉnh sửa Bio & Hồ sơ hẹn hò
-          </h1>
-          <p className="text-sm text-charcoal-muted max-w-xl mt-1 leading-relaxed">
-            Đánh giá & phân tích do Coach AI tạo từ đúng bio bạn dán — kèm bản viết lại copy-ready.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2 bg-paper-card px-3.5 py-1.5 rounded-full border border-paper-border shadow-xs text-xs font-mono text-charcoal">
-          <span className="w-2 h-2 rounded-full bg-neon-pink animate-pulse" />
-          <span>RAG Model: Authentic Dating Profile</span>
-        </div>
-      </div>
+        }
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         <div className="lg:col-span-5 flex flex-col gap-6">
-          <div className="bg-paper-card p-6 rounded-2xl shadow-sm border border-paper-border flex flex-col gap-4">
+          <div className={`${modeCardClass} flex flex-col`}>
             <div className="flex items-center justify-between">
               <label
                 htmlFor="bio-draft"
-                className="text-xs font-bold text-charcoal uppercase tracking-wider flex items-center gap-1.5"
+                className={modeLabelClass}
               >
                 <Edit3 className="w-4 h-4 text-magenta-600" aria-hidden="true" />
                 <span>Bio / Profile nháp của bạn</span>
@@ -303,6 +294,6 @@ export const BioStudioView: React.FC<BioStudioViewProps> = ({ onToast }) => {
       </div>
 
       <CitationModal citation={activeCitation} onClose={() => setActiveCitation(null)} />
-    </div>
+    </ModePage>
   );
 };

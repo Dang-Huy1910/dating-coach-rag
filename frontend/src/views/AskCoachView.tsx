@@ -97,22 +97,30 @@ export const AskCoachView: React.FC<AskCoachViewProps> = ({ initialPrompt, onToa
   };
 
   return (
-    <div className="relative w-full max-w-4xl mx-auto flex flex-col min-h-[calc(100vh-14rem)] pb-32">
-      {/* Top Session Counter & Archival Breadcrumb */}
-      <div className="w-full flex items-center justify-between py-2 mb-6 border-b border-paper-border text-xs text-charcoal-muted">
-        <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-magenta-600"></span>
-          <span className="font-mono uppercase tracking-wider font-semibold text-charcoal">
-            Phiên đối thoại trực tiếp • Phòng tham vấn 01
-          </span>
+    <div className="relative w-full max-w-5xl mx-auto flex flex-col min-h-[calc(100vh-14rem)] pb-32 space-y-8">
+      <header className="border-b border-paper-border pb-6">
+        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+          <div className="space-y-2 min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-neon-pink animate-pulse" aria-hidden="true" />
+              <span className="text-xs font-mono font-bold uppercase tracking-widest text-magenta-700">
+                Phiên đối thoại • Hỏi coach
+              </span>
+            </div>
+            <h1 className="font-editorial text-3xl sm:text-4xl text-charcoal font-normal tracking-tight">
+              Hỏi coach giao tiếp hẹn hò
+            </h1>
+            <p className="text-sm text-charcoal-muted max-w-2xl leading-relaxed">
+              Hỏi về bio, opener, nhịp chat, ranh giới… Coach trích nguồn từ thư viện đã kiểm duyệt khi trả lời.
+            </p>
+          </div>
+          <div className="inline-flex items-center gap-2 text-xs font-mono text-charcoal-muted bg-paper-card px-3.5 py-1.5 rounded-full border border-paper-border shadow-xs shrink-0">
+            <BookOpen className="w-3.5 h-3.5 text-magenta-600" aria-hidden="true" />
+            <span className="hidden sm:inline">RAG · Gắn bó & giao tiếp</span>
+            <span className="sm:hidden">RAG</span>
+          </div>
         </div>
-        <div className="flex items-center gap-2 text-charcoal-muted">
-          <BookOpen className="w-3.5 h-3.5 text-magenta-600" />
-          <span className="hidden sm:inline font-mono">
-            RAG Corpus: Tâm lý học gắn bó & Giao tiếp phi bạo lực
-          </span>
-        </div>
-      </div>
+      </header>
 
       {/* Empty State (Screen 02) */}
       {messages.length === 0 ? (
@@ -175,14 +183,14 @@ export const AskCoachView: React.FC<AskCoachViewProps> = ({ initialPrompt, onToa
 
           {/* Heading */}
           <div className="flex flex-col items-center gap-2 max-w-lg mb-8">
-            <span className="text-xs font-bold uppercase tracking-widest text-magenta-700">
+            <span className="text-xs font-mono font-bold uppercase tracking-widest text-magenta-700">
               Phòng tham vấn cá nhân
             </span>
-            <h2 className="font-editorial text-3xl sm:text-4xl text-charcoal font-normal">
+            <h2 className="font-editorial text-3xl sm:text-4xl text-charcoal font-normal tracking-tight">
               Bắt đầu với một sự chân thật.
             </h2>
             <p className="text-sm text-charcoal-muted max-w-md mt-1 leading-relaxed">
-              Hỏi về bio, opener, nhịp chat, ranh giới… Coach sẽ trích nguồn tâm lý học và nghiên cứu tương tác khi trả lời.
+              Chọn gợi ý bên dưới hoặc gõ câu hỏi — câu trả lời có citation khi thư viện đủ mạnh.
             </p>
           </div>
 

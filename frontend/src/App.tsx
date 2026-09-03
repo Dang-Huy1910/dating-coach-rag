@@ -3,6 +3,7 @@ import { SessionProvider } from './context/SessionContext';
 import { Header, AppMode } from './components/Header';
 import { HealthNotice } from './components/HealthNotice';
 import { Toast } from './components/Toast';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { WelcomeView } from './views/WelcomeView';
 import { AskCoachView } from './views/AskCoachView';
 import { BioStudioView } from './views/BioStudioView';
@@ -30,25 +31,36 @@ const AppContent: React.FC = () => {
   };
 
   const renderCurrentView = () => {
+    let view: React.ReactNode;
     switch (currentMode) {
       case 'welcome':
-        return <WelcomeView onSelectMode={handleSelectMode} />;
+        view = <WelcomeView onSelectMode={handleSelectMode} />;
+        break;
       case 'ask':
-        return <AskCoachView initialPrompt={initialPrompt} onToast={showToast} />;
+        view = <AskCoachView initialPrompt={initialPrompt} onToast={showToast} />;
+        break;
       case 'bio':
-        return <BioStudioView onToast={showToast} />;
+        view = <BioStudioView onToast={showToast} />;
+        break;
       case 'message':
-        return <MessageView onToast={showToast} />;
+        view = <MessageView onToast={showToast} />;
+        break;
       case 'openers':
-        return (
+        view = (
           <OpenersView
             onToast={showToast}
             onNavigateToMessage={() => handleSelectMode('message')}
           />
         );
+        break;
       default:
-        return <WelcomeView onSelectMode={handleSelectMode} />;
+        view = <WelcomeView onSelectMode={handleSelectMode} />;
     }
+    return (
+      <ErrorBoundary key={currentMode} label={currentMode}>
+        {view}
+      </ErrorBoundary>
+    );
   };
 
   return (

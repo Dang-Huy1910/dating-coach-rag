@@ -5,11 +5,12 @@ import { Citation, CoachReply } from '../api/types';
 import { CitationModal } from '../components/CitationModal';
 import { CoachBubble } from '../components/CoachBubble';
 import {
+  AlertCircle,
   ArrowUp,
+  BookOpen,
+  Lock,
   PenTool,
   Sparkles,
-  Lock,
-  AlertCircle
 } from 'lucide-react';
 
 interface ChatTurn {

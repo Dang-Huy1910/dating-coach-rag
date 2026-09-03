@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Citation, CoachReply } from '../api/types';
+import { CoachMarkdown } from './CoachMarkdown';
 import { SafetyBanner } from './SafetyBanner';
 import {
   BookOpen,
@@ -48,9 +49,6 @@ export const CoachBubble: React.FC<CoachBubbleProps> = ({
     navigator.clipboard.writeText(text).then(done).catch(() => undefined);
   };
 
-  const bodyText = (reply?.reply || 'Coach chưa trả nội dung.').trim();
-  const paragraphs = bodyText.split(/\n+/).filter(Boolean);
-
   return (
     <div className="flex flex-col gap-2 max-w-full">
       <div className="bg-paper-card rounded-2xl rounded-tl-none p-5 sm:p-6 shadow-sm border border-paper-border relative overflow-hidden space-y-4">
@@ -97,12 +95,8 @@ export const CoachBubble: React.FC<CoachBubbleProps> = ({
         {reply?.refused ? (
           <SafetyBanner message={reply.reply || 'Yêu cầu này không thể hỗ trợ.'} />
         ) : (
-          <div className="pl-1 text-sm sm:text-[15px] text-charcoal leading-relaxed space-y-3">
-            {paragraphs.map((paragraph, idx) => (
-              <p key={idx} className={idx === 0 ? 'font-medium' : 'text-charcoal-soft'}>
-                {paragraph}
-              </p>
-            ))}
+          <div className="pl-1 rounded-xl bg-gradient-to-br from-magenta-50/30 via-transparent to-paper-subtle/40 -mx-1 px-3 py-3 sm:px-4 sm:py-3.5 border border-transparent">
+            <CoachMarkdown content={reply?.reply || ''} />
           </div>
         )}
 

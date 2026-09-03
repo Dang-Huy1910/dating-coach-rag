@@ -53,6 +53,12 @@ class CoachReply(BaseModel):
     intent: Intent
     improved_draft: str | None = None
     openers: list[str] | None = None
+    # Optional coaching diagnostics (filled by LLM for analyze_message)
+    tone: str | None = None
+    clarity: str | None = None
+    risk: str | None = None
+    # Bullet points for bio (and optionally message) evaluation — LLM only
+    analysis_points: list[str] | None = None
 
 
 class ErrorResponse(BaseModel):

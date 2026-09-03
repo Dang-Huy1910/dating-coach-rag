@@ -1,7 +1,7 @@
 def test_rewrite_bio_contract(client, stub_hits, monkeypatch):
     monkeypatch.setattr(
         "backend.app.coach.complete",
-        lambda _prompt: '{"reply": "Thêm một chi tiết cụ thể.", "improved_draft": "Cuối tuần nấu phở và đi chợ hoa.", "openers": null}',
+        lambda _prompt: '{"reply": "Thêm một chi tiết cụ thể.", "improved_draft": "Cuối tuần nấu phở và đi chợ hoa.", "openers": null, "analysis_points": ["Bỏ khẩu hiệu chung", "Thêm thói quen cuối tuần", "Thêm lời mời cà phê"]}',
     )
     sid = client.post("/v1/sessions").json()["id"]
     response = client.post(

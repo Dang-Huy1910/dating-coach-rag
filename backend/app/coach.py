@@ -162,6 +162,96 @@ def _parse_model_json(raw: str) -> dict:
     return {"reply": text, "improved_draft": None, "openers": None}
 
 
+def _clean_label(value: object) -> str | None:
+    if value is None:
+        return None
+    text = str(value).strip()
+    return text or None
+
+
+def _strip_disclaimer_echo(reply: str) -> str:
+    """Drop a leading product-disclaimer echo; UI already shows disclaimer."""
+    text = (reply or "").strip()
+    if not text:
+        return text
+    needle = "Đây là chatbot coach"
+    if text.startswith(needle) or text.lower().startswith("this is a dating-communication coach"):
+        parts = re.split(r"\n\s*\n", text, maxsplit=1)
+        if len(parts) == 2 and parts[1].strip():
+            return parts[1].strip()
+        # Single block that is mostly disclaimer — keep original rather than empty
+        if len(text) < 220:
+            return text
+    return text
+
+
+def _fill_analyze_metrics(
+    *,
+    draft: str,
+    reply_text: str,
+    tone: str | None,
+    clarity: str | None,
+    risk: str | None,
+) -> tuple[str | None, str | None, str | None]:
+    """Ensure tone/clarity/risk come from the LLM (retry once if missing)."""
+    if tone and clarity and risk:
+        return tone, clarity, risk
+
+    prompt = (
+        "Intent: analyze_message_metrics_only\n"
+        "Return JSON only with keys tone, clarity, risk — short Vietnamese labels "
+        "(max ~10 words each). risk = interpersonal communication pressure/clarity/"
+        "boundaries, NOT clinical diagnosis.\n\n"
+        f"Message draft:\n{draft}\n\n"
+        f"Coach analysis so far:\n{reply_text}\n"
+    )
+    try:
+        parsed = _parse_model_json(complete(prompt))
+    except Exception:
+        return tone, clarity, risk
+
+    return (
+        tone or _clean_label(parsed.get("tone")),
+        clarity or _clean_label(parsed.get("clarity")),
+        risk or _clean_label(parsed.get("risk")),
+    )
+
+
+def _parse_analysis_points(raw: object) -> list[str] | None:
+    if not isinstance(raw, list):
+        return None
+    points = [str(x).strip() for x in raw if str(x).strip()]
+    return points or None
+
+
+def _fill_bio_analysis_points(
+    *,
+    draft: str,
+    reply_text: str,
+    points: list[str] | None,
+) -> list[str] | None:
+    """Ensure rewrite_bio evaluation bullets come from the LLM (retry once if thin)."""
+    if points and len(points) >= 2:
+        return points[:4]
+
+    prompt = (
+        "Intent: rewrite_bio_analysis_points_only\n"
+        "Return JSON only with key analysis_points: array of 2–4 short Vietnamese "
+        "bullets evaluating THIS dating bio (vague wording, missing specifics, "
+        "missing natural invite/hook). No product disclaimer.\n\n"
+        f"Bio draft:\n{draft}\n\n"
+        f"Coach analysis so far:\n{reply_text}\n"
+    )
+    try:
+        parsed = _parse_model_json(complete(prompt))
+    except Exception:
+        return points
+
+    filled = _parse_analysis_points(parsed.get("analysis_points"))
+    if filled and len(filled) >= 2:
+        return filled[:4]
+    return points
+
 def _refusal_reply(intent: Intent, verdict: SafetyVerdict, extra_openers: list[str] | None = None) -> CoachReply:
     return CoachReply(
         reply=verdict.user_message,
@@ -242,8 +332,29 @@ def handle(
     opener_list = [str(x) for x in openers] if isinstance(openers, list) else None
     if intent == "openers" and opener_list and len(opener_list) < 2:
         opener_list = None
+
+    reply_text = _strip_disclaimer_echo(
+        str(parsed.get("reply") or "").strip() or "Mình chưa soạn được câu trả lời rõ."
+    )
+    tone = clarity = risk = None
+    analysis_points = _parse_analysis_points(parsed.get("analysis_points"))
+    if intent == "analyze_message":
+        tone, clarity, risk = _fill_analyze_metrics(
+            draft=user_text,
+            reply_text=reply_text,
+            tone=_clean_label(parsed.get("tone")),
+            clarity=_clean_label(parsed.get("clarity")),
+            risk=_clean_label(parsed.get("risk")),
+        )
+    if intent == "rewrite_bio":
+        analysis_points = _fill_bio_analysis_points(
+            draft=user_text,
+            reply_text=reply_text,
+            points=analysis_points,
+        )
+
     reply = CoachReply(
-        reply=str(parsed.get("reply") or "").strip() or "Mình chưa soạn được câu trả lời rõ.",
+        reply=reply_text,
         citations=_citations(hits),
         refused=False,
         hedged=False,
@@ -251,6 +362,10 @@ def handle(
         intent=intent,
         improved_draft=(str(parsed["improved_draft"]) if parsed.get("improved_draft") else None),
         openers=opener_list,
+        tone=tone,
+        clarity=clarity,
+        risk=risk,
+        analysis_points=analysis_points,
     )
     _record(store, session_id, user_text, intent, reply)
     return reply

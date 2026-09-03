@@ -138,7 +138,13 @@ def ask(session_id: UUID, body: AskRequest, request: Request):
 @router.post("/v1/sessions/{session_id}/rewrite-bio", response_model=CoachReply)
 def rewrite_bio(session_id: UUID, body: DraftRequest, request: Request):
     text = _require_text(body.draft)
-    extra = f"Notes: {body.notes}" if body.notes else "Return improved_draft as a copy-ready bio."
+    notes = f" Notes: {body.notes}" if body.notes else ""
+    extra = (
+        "REQUIRED: return analysis_points as 2–4 short Vietnamese bullets evaluating THIS bio "
+        "(what is vague/generic, what to make concrete, what natural invite/hook to add). "
+        "Also return improved_draft as a copy-ready bio. Do not put the product disclaimer inside reply."
+        + notes
+    )
     return _run(request, str(session_id), "rewrite_bio", text, extra)
 
 
@@ -146,8 +152,10 @@ def rewrite_bio(session_id: UUID, body: DraftRequest, request: Request):
 def analyze_message(session_id: UUID, body: DraftRequest, request: Request):
     text = _require_text(body.draft)
     extra = (
-        "Comment on tone, clarity, and interpersonal risk (pressure/consent/clarity). "
-        "Return improved_draft. Notes: " + (body.notes or "")
+        "REQUIRED: populate tone, clarity, and risk from YOUR analysis of this draft "
+        "(short Vietnamese labels, max ~10 words each; interpersonal risk only, not clinical). "
+        "Also return improved_draft. Do not put the product disclaimer inside reply. "
+        "Notes: " + (body.notes or "")
     )
     return _run(request, str(session_id), "analyze_message", text, extra)
 

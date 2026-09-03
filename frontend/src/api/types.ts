@@ -33,6 +33,12 @@ export interface CoachReply {
   intent: Intent;
   improved_draft?: string | null;
   openers?: string[] | null;
+  /** LLM labels for analyze_message only */
+  tone?: string | null;
+  clarity?: string | null;
+  risk?: string | null;
+  /** LLM evaluation bullets (required for rewrite_bio) */
+  analysis_points?: string[] | null;
 }
 
 export interface ErrorResponse {

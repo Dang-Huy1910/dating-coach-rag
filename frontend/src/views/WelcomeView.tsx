@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { AppMode } from '../components/Header';
-import { ArrowRight, ArrowUpRight, BookOpen, Coffee, Info, Lock, PenLine } from 'lucide-react';
+import { ArrowRight, ArrowUpRight, AtSign, BookOpen, Coffee, Info, Lock, PenLine } from 'lucide-react';
 
 interface WelcomeViewProps {
   onSelectMode: (mode: AppMode, initialPrompt?: string) => void;
@@ -182,6 +182,17 @@ export const WelcomeView: React.FC<WelcomeViewProps> = ({ onSelectMode }) => {
               </button>
               <p className="text-[11px] text-charcoal-muted text-center">
                 Không cần tài khoản. Nội dung trò chuyện sẽ không được lưu sau khi đóng tab.
+              </p>
+              <button
+                type="button"
+                onClick={() => onSelectMode('profile')}
+                className="w-full min-h-[44px] bg-paper-card hover:bg-magenta-50 text-magenta-800 py-3 px-6 rounded-xl text-sm font-semibold border border-magenta-200 hover:border-magenta-300 transition-all flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <AtSign className="w-4 h-4" aria-hidden="true" />
+                <span>Dán bio / caption công khai</span>
+              </button>
+              <p className="text-[11px] text-charcoal-muted text-center">
+                Không đăng nhập Instagram. Handle chỉ là nhãn, không tự tải profile.
               </p>
             </div>
 

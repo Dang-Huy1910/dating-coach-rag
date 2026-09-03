@@ -44,7 +44,7 @@ _REFUSALS: dict[SafetyCategory, str] = {
         "Nếu muốn, mình có thể gợi ý cách nói rõ ràng và tôn trọng ranh giới."
     ),
     "scrape": (
-        "Mình không cào profile hay dữ liệu từ app hẹn hò. "
+        "Mình không cào, crawl hay tự tải profile Instagram, app hẹn hò hay mạng xã hội. "
         "Thư viện kiến thức do người làm dự án soạn, không scrape."
     ),
 }
@@ -61,8 +61,12 @@ _PATTERNS: list[tuple[SafetyCategory, re.Pattern[str]]] = [
     (
         "scrape",
         re.compile(
-            r"\b(scrape|crawler|crawl)\b.+\b(tinder|bumble|hinge|profile)s?\b|"
-            r"cào (profile|tinder|bumble)|kéo dữ liệu (hẹn hò|dating)",
+            r"\b(scrape|crawler|crawl)\b.+\b(tinder|bumble|hinge|profile|instagram|insta)s?\b|"
+            r"\b(scrape|crawl)\s+(this\s+)?(instagram|insta|ig|profile)\b|"
+            r"cào (hết |toàn bộ )?(profile|tinder|bumble|instagram|insta|ig|bài viết)|"
+            r"kéo dữ liệu (hẹn hò|dating)|"
+            r"(cào|scrape|crawl).{0,40}(instagram|insta|\big\b)|"
+            r"(download|tải xuống|tải hết|tải toàn bộ).{0,40}(instagram|insta|bài viết)",
             re.I,
         ),
     ),
@@ -97,8 +101,13 @@ _PATTERNS: list[tuple[SafetyCategory, re.Pattern[str]]] = [
         "matchmaking",
         re.compile(
             r"\b(match me with|find me a (girl|boy|date)|set me up with)\b|"
-            r"ghép đôi (tôi|mình)|tìm người yêu hộ|giới thiệu người thật|"
-            r"xếp hạng (profile|người)|swipe hộ|kết nối hai người thật",
+            r"ghép đôi|"
+            r"tìm người yêu hộ|giới thiệu người thật|"
+            r"xếp hạng (profile|người|người này)|"
+            r"swipe hộ|kết nối hai người thật|"
+            r"người này có thích mình không|"
+            r"tỉ lệ hợp|% hợp|phần trăm hợp|"
+            r"\bmatch %\b|\bcompatibility (score|percent)\b",
             re.I,
         ),
     ),

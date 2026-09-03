@@ -14,7 +14,8 @@ A personal **Dating Coach Chatbot** that:
 2. Helps rewrite a **profile / bio** draft.
 3. Suggests **openers** for a given context (app, mutual friend, etc.).
 4. **Analyzes a message draft** (tone, clarity, risk) and suggests revisions.
-5. Exposes capabilities through a **Backend API**; UI is a thin React client (Streamlit only as a temporary demo).
+5. Coaches from **public-visible profile text the user already saw** (optional handle/link as a label plus pasted bio/captions). Paste-only — the product does not log into Instagram or fetch the live profile.
+6. Exposes capabilities through a **Backend API**; UI is a thin React client (Streamlit only as a temporary demo).
 
 ## Target user (v1)
 
@@ -31,7 +32,9 @@ Solo learner / demo user chatting with the coach in a local or simple deployed a
 ## Non-goals (v1)
 
 - Matching two real humans
-- Scraping dating apps or real profiles at scale
+- Scraping dating apps, Instagram, or real profiles (including “public scrape”)
+- Instagram / social OAuth or login inside this product
+- A durable crush dossier or people-search archive
 - Storing sexual/intimate chat logs as a product feature
 - Fine-tuning a custom LLM
 - Full admin dashboard / tickets / auth system (optional later)
@@ -45,6 +48,7 @@ Curated files under something like `data/knowledge/` (to be defined in plan):
 - Conversation pacing
 - Boundaries & consent basics (non-clinical)
 - Common red flags (informational, not diagnostic)
+- Public-profile-context hygiene (paste-only, anti-stalking, public vs private)
 
 Owner must license/source content ethically (own notes, public-domain, or properly attributed material).
 

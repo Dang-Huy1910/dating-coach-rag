@@ -1,4 +1,5 @@
-export type Intent = 'ask' | 'rewrite_bio' | 'analyze_message' | 'openers';
+export type Intent = 'ask' | 'rewrite_bio' | 'analyze_message' | 'openers' | 'profile_context';
+export type PrivacyFlag = 'public' | 'private' | 'unknown';
 
 export interface HealthResponse {
   status: 'ok';
@@ -43,7 +44,7 @@ export interface CoachReply {
 
 export interface ErrorResponse {
   detail: string;
-  code?: 'empty_input' | 'too_long' | 'not_found' | 'index_not_ready' | string | null;
+  code?: 'empty_input' | 'too_long' | 'not_found' | 'index_not_ready' | 'need_visible_text' | string | null;
 }
 
 export interface AskRequest {
@@ -58,5 +59,22 @@ export interface DraftRequest {
 
 export interface OpenersRequest {
   context: string;
+}
+
+export interface ProfileImage {
+  mime_type: 'image/jpeg' | 'image/png' | 'image/webp' | string;
+  data_base64: string;
+  caption?: string | null;
+  comments?: string | null;
+}
+
+export interface ProfileContextRequest {
+  handle?: string | null;
+  profile_url?: string | null;
+  visible_text?: string;
+  privacy?: PrivacyFlag;
+  relationship_progress?: string | null;
+  question?: string | null;
+  images?: ProfileImage[];
 }
 

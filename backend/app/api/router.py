@@ -3,6 +3,7 @@ from __future__ import annotations
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Request
+from fastapi.responses import JSONResponse
 from sse_starlette.sse import EventSourceResponse
 
 from backend.app.coach import IndexNotReadyError, LLMProviderError, handle
@@ -14,10 +15,24 @@ from backend.app.models import (
     DraftRequest,
     HealthResponse,
     OpenersRequest,
+    ProfileContextRequest,
     SessionResponse,
 )
+from backend.app.profile_gate import classify, has_visible_context, validate_images
+from backend.app.prompts import PROFILE_CONTEXT_EXTRA
+from backend.app.public_fetch import fetch_public_profile, merge_fetched_text
 from backend.app.rag.retrieve import index_ready
 from backend.app.session_store import SessionStore
+
+HANDLE_MAX = 128
+URL_MAX = 500
+VISIBLE_MAX = 8000
+QUESTION_MAX = 2000
+RELATIONSHIP_MAX = 2000
+TOO_LONG_DETAIL = "Nội dung quá dài, hãy rút ngắn dưới 8000 ký tự."
+EMPTY_DETAIL = (
+    "Hãy dán link YouTube/Reddit, bio/caption, hoặc thêm ảnh chụp bài bạn đã thấy."
+)
 
 router = APIRouter()
 
@@ -83,7 +98,45 @@ def delete_session(session_id: UUID, request: Request) -> None:
         raise HTTPException(status_code=404, detail="Không tìm thấy phiên chat.")
 
 
-def _run(request: Request, session_id: str, intent, user_text: str, extra: str = "") -> CoachReply:
+def _json_error(status: int, detail: str, code: str) -> JSONResponse:
+    return JSONResponse(status_code=status, content={"detail": detail, "code": code})
+
+
+def _is_blank_profile_request(body: ProfileContextRequest) -> bool:
+    return not (
+        (body.handle or "").strip()
+        or (body.profile_url or "").strip()
+        or (body.visible_text or "").strip()
+        or (body.question or "").strip()
+        or (body.relationship_progress or "").strip()
+        or (body.images or [])
+        or body.privacy == "private"
+    )
+
+
+def _profile_too_long(body: ProfileContextRequest) -> bool:
+    handle = body.handle or ""
+    url = body.profile_url or ""
+    question = body.question or ""
+    visible = body.visible_text or ""
+    progress = body.relationship_progress or ""
+    return (
+        len(handle) > HANDLE_MAX
+        or len(url) > URL_MAX
+        or len(visible) > VISIBLE_MAX
+        or len(question) > QUESTION_MAX
+        or len(progress) > RELATIONSHIP_MAX
+    )
+
+
+def _run(
+    request: Request,
+    session_id: str,
+    intent,
+    user_text: str,
+    extra: str = "",
+    profile_request: ProfileContextRequest | None = None,
+) -> CoachReply:
     _session_or_404(request, session_id)
     try:
         return handle(
@@ -92,6 +145,7 @@ def _run(request: Request, session_id: str, intent, user_text: str, extra: str =
             intent=intent,
             user_text=user_text,
             extra=extra,
+            profile_request=profile_request,
         )
     except IndexNotReadyError as exc:
         raise HTTPException(
@@ -165,3 +219,38 @@ def openers(session_id: UUID, body: OpenersRequest, request: Request):
     text = _require_text(body.context)
     extra = "Suggest at least two distinct opener options in the openers array."
     return _run(request, str(session_id), "openers", text, extra)
+
+
+@router.post("/v1/sessions/{session_id}/profile-context", response_model=CoachReply)
+def profile_context(session_id: UUID, body: ProfileContextRequest, request: Request):
+    sid = str(session_id)
+    _session_or_404(request, sid)
+    if _profile_too_long(body):
+        return _json_error(400, TOO_LONG_DETAIL, "too_long")
+    image_code, image_detail = validate_images(body.images)
+    if image_code and image_detail:
+        return _json_error(400, image_detail, image_code)
+    if _is_blank_profile_request(body):
+        return _json_error(400, EMPTY_DETAIL, "empty_input")
+    fetched = fetch_public_profile(body.profile_url)
+    if fetched.text:
+        body = body.model_copy(
+            update={"visible_text": merge_fetched_text(body.visible_text, fetched.text)}
+        )
+    elif fetched.error_code and not has_visible_context(body):
+        return _json_error(
+            400,
+            fetched.error_detail or "Không đọc được link công khai này.",
+            fetched.error_code,
+        )
+    gate = classify(body)
+    if gate.code == "need_visible_text":
+        return _json_error(400, gate.user_message, "need_visible_text")
+    return _run(
+        request,
+        sid,
+        "profile_context",
+        user_text="",
+        extra=PROFILE_CONTEXT_EXTRA,
+        profile_request=body,
+    )

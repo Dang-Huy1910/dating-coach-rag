@@ -1,9 +1,22 @@
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
-Intent = Literal["ask", "rewrite_bio", "analyze_message", "openers"]
+Intent = Literal["ask", "rewrite_bio", "analyze_message", "openers", "profile_context"]
+PrivacyFlag = Literal["public", "private", "unknown"]
+ErrorCode = Literal[
+    "empty_input",
+    "too_long",
+    "not_found",
+    "index_not_ready",
+    "need_visible_text",
+    "too_many_images",
+    "invalid_image",
+    "fetch_failed",
+]
+
+
 
 
 class HealthResponse(BaseModel):
@@ -36,6 +49,29 @@ class OpenersRequest(BaseModel):
     context: str = Field(min_length=1, max_length=8000)
 
 
+class ProfileImage(BaseModel):
+    """Screenshot the user already saw. Request-scoped only — never persisted."""
+
+    mime_type: str
+    data_base64: str
+    caption: str | None = Field(default=None, max_length=2000)
+    comments: str | None = Field(default=None, max_length=4000)
+
+
+class ProfileContextRequest(BaseModel):
+    """Public profile context: YouTube/Reddit fetch + optional paste/screenshots."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    handle: str | None = None
+    profile_url: str | None = None
+    visible_text: str = ""
+    privacy: PrivacyFlag = "unknown"
+    relationship_progress: str | None = Field(default=None, max_length=2000)
+    question: str | None = None
+    images: list[ProfileImage] = Field(default_factory=list)
+
+
 class Citation(BaseModel):
     source_id: str
     title: str
@@ -63,4 +99,4 @@ class CoachReply(BaseModel):
 
 class ErrorResponse(BaseModel):
     detail: str
-    code: Literal["empty_input", "too_long", "not_found", "index_not_ready"] | None = None
+    code: ErrorCode | None = None

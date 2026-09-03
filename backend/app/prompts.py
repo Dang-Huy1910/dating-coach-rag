@@ -13,7 +13,7 @@ Rules:
 Return a single JSON object with keys:
 - "reply": string, the user-facing coaching message (Markdown ok). Start with the analysis itself — never open by repeating the product disclaimer.
 - "improved_draft": string or null (bio or message rewrite)
-- "openers": array of strings or null (at least two distinct openers when asked)
+- "openers": array of strings or null (at least two distinct openers when asked for openers; at least one opener or next-message when Intent is profile_context)
 - "analysis_points": array of 2–4 short Vietnamese strings or null.
   REQUIRED when Intent is rewrite_bio: concrete evaluation bullets for this draft
   (what is vague, what to make specific, what invitation/hook to add). No generic filler.
@@ -42,3 +42,19 @@ def build_user_prompt(
         f"{extra}\n"
         "Respond with JSON only."
     )
+
+
+PROFILE_CONTEXT_EXTRA = (
+    "The user may paste a public YouTube or Reddit URL (server may attach a short "
+    "official-API excerpt labeled [public fetch]), plus captions/notes, screenshots, "
+    "per-image caption/comments, and how far the relationship has progressed. "
+    "Do NOT fetch or claim to have loaded Instagram, TikTok, or dating apps. "
+    "Do NOT invent posts, follower counts, or studies about this person. "
+    "Use relationship_progress to pace advice (new follow vs already chatting vs met). "
+    "If screenshots are attached, use visible vibe plus the user-supplied caption/"
+    "comments for that image — no face identification, no match %, no stalking. "
+    "Cite only retrieved library excerpts; never cite a social URL as a knowledge path. "
+    "When the library supports it, return at least one concrete opener or next-message "
+    "in the openers array. Reply in the language of the latest user message. "
+    "Do not put the product disclaimer inside reply."
+)

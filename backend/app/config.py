@@ -26,6 +26,7 @@ class Settings(BaseSettings):
     index_dir: Path = REPO_ROOT / "data" / "index"
     dating_coach_embedder: str = Field(default="minilm")
     dating_coach_api: str = "http://127.0.0.1:8000"
+    youtube_api_key: str = ""
 
     @property
     def embedder_name(self) -> str:

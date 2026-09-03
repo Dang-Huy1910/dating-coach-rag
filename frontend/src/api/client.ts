@@ -6,6 +6,7 @@ import {
   ErrorResponse,
   HealthResponse,
   OpenersRequest,
+  ProfileContextRequest,
   SessionResponse,
 } from './types';
 
@@ -133,6 +134,16 @@ export const api = {
   suggestOpeners: async (sessionId: string, context: string): Promise<CoachReply> => {
     const body: OpenersRequest = { context };
     return request<CoachReply>(`/v1/sessions/${sessionId}/openers`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    });
+  },
+
+  coachFromProfileContext: async (
+    sessionId: string,
+    body: ProfileContextRequest,
+  ): Promise<CoachReply> => {
+    return request<CoachReply>(`/v1/sessions/${sessionId}/profile-context`, {
       method: 'POST',
       body: JSON.stringify(body),
     });

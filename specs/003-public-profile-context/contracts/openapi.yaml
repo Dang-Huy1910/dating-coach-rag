@@ -1,0 +1,234 @@
+openapi: 3.1.0
+info:
+  title: Dating Coach RAG API — Public Profile Context (003)
+  version: 0.3.0
+  description: >
+    Additive contract for public-profile-context coaching.
+    Extends specs/001-dating-coach-rag/contracts/openapi.yaml.
+    Paste-only: the server MUST NOT fetch Instagram or any third-party profile.
+    JSON only (no SSE on this path).
+servers:
+  - url: http://127.0.0.1:8000
+    description: Local demo
+tags:
+  - name: coaching
+paths:
+  /v1/sessions/{session_id}/profile-context:
+    post:
+      tags: [coaching]
+      summary: Coach from user-pasted public-visible profile text (003 US1–US3)
+      operationId: coachFromProfileContext
+      description: |
+        Accepts an optional public handle/URL as a **label only** plus pasted
+        bio/captions the user can already see. Does not log into Instagram,
+        does not crawl, and does not store a crush dossier.
+
+        Gate (before retrieve):
+        - scrape / matchmaking / other safety → 200 CoachReply refused
+        - privacy=private or private-language → 200 refused (cannot-fetch)
+        - no usable visible_text → 400 need_visible_text
+      parameters:
+        - $ref: "#/components/parameters/SessionId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProfileContextRequest"
+            examples:
+              publicPaste:
+                summary: Public bio/captions the user already saw
+                value:
+                  handle: "@example"
+                  profile_url: "https://instagram.com/example"
+                  privacy: public
+                  visible_text: "Coffee, trail running, đang học tiếng Việt. Caption gần nhất: sunrise ở Đà Lạt."
+                  question: "Mình nên mở lời thế nào cho lịch sự, không theo dõi quá?"
+              handleOnly:
+                summary: Label only — must not look like a live load
+                value:
+                  handle: "@example"
+                  privacy: unknown
+                  visible_text: ""
+              privateAccount:
+                summary: Private / locked — out of scope
+                value:
+                  handle: "@lockeduser"
+                  privacy: private
+                  visible_text: ""
+                  question: "Tải profile riêng tư giúp mình"
+              scrapeAsk:
+                summary: Forbidden crawl
+                value:
+                  profile_url: "https://instagram.com/someone"
+                  visible_text: "Scrape Instagram profile này rồi phân tích giúp"
+                  question: "Cào hết bài viết"
+      responses:
+        "200":
+          description: >
+            Coach reply. refused=true for private-out-of-scope, scrape,
+            matchmaking, or weak-retrieval refuse. citations empty when refused.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CoachReply"
+        "400":
+          description: Empty body, oversize, or handle/URL without pasted visible text
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                needVisibleText:
+                  value:
+                    detail: "Mình không tự tải profile. Hãy dán bio hoặc caption bạn đã thấy công khai."
+                    code: need_visible_text
+                tooLong:
+                  value:
+                    detail: "Nội dung quá dài, hãy rút ngắn dưới 8000 ký tự."
+                    code: too_long
+        "404":
+          $ref: "#/components/responses/NotFound"
+components:
+  parameters:
+    SessionId:
+      name: session_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  responses:
+    NotFound:
+      description: Unknown session
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+  schemas:
+    ProfileContextRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        handle:
+          type: string
+          maxLength: 128
+          description: Optional public handle used as a label only — never fetched
+          examples: ["@example"]
+        profile_url:
+          type: string
+          maxLength: 500
+          description: Optional public profile URL used as a label only — never fetched
+        visible_text:
+          type: string
+          default: ""
+          maxLength: 8000
+          description: >
+            Bio, captions, or notes already visible without logging in.
+            Required (non-empty after trim) unless images are attached;
+            empty + handle/url and no images yields 400 need_visible_text.
+        privacy:
+          type: string
+          enum: [public, private, unknown]
+          default: unknown
+        question:
+          type: string
+          maxLength: 2000
+          description: Optional coaching question (approach, tone, opener)
+        images:
+          type: array
+          maxItems: 3
+          description: >
+            Screenshots of public posts/stories the user already viewed.
+            Request-scoped; never fetched; never stored as a crush album.
+          items:
+            type: object
+            required: [mime_type, data_base64]
+            additionalProperties: false
+            properties:
+              mime_type:
+                type: string
+                enum: [image/jpeg, image/png, image/webp]
+              data_base64:
+                type: string
+                description: Raw base64 (data-URL prefix allowed; stripped server-side)
+      example:
+        handle: "@example"
+        privacy: public
+        visible_text: "Thích chạy bộ và cà phê trứng"
+        question: "Gợi ý opener"
+    Citation:
+      type: object
+      required: [source_id, title, path, score]
+      properties:
+        source_id:
+          type: string
+        title:
+          type: string
+        heading:
+          type: string
+          nullable: true
+        path:
+          type: string
+          description: Repo-relative knowledge path (never an Instagram URL)
+        score:
+          type: number
+          format: float
+    CoachReply:
+      type: object
+      required: [reply, citations, refused, hedged, disclaimer, intent]
+      properties:
+        reply:
+          type: string
+        citations:
+          type: array
+          items:
+            $ref: "#/components/schemas/Citation"
+        refused:
+          type: boolean
+        hedged:
+          type: boolean
+        disclaimer:
+          type: string
+        intent:
+          type: string
+          enum: [ask, rewrite_bio, analyze_message, openers, profile_context]
+        improved_draft:
+          type: string
+          nullable: true
+        openers:
+          type: array
+          items:
+            type: string
+          description: Concrete opener/next-message suggestions when coaching is allowed
+        tone:
+          type: string
+          nullable: true
+        clarity:
+          type: string
+          nullable: true
+        risk:
+          type: string
+          nullable: true
+        analysis_points:
+          type: array
+          nullable: true
+          items:
+            type: string
+    ErrorResponse:
+      type: object
+      required: [detail]
+      properties:
+        detail:
+          type: string
+        code:
+          type: string
+          enum:
+            - empty_input
+            - too_long
+            - not_found
+            - index_not_ready
+            - need_visible_text
+            - too_many_images
+            - invalid_image
+            - fetch_failed

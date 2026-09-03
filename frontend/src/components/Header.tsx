@@ -3,7 +3,7 @@ import { DisclaimerBar } from './DisclaimerBar';
 import { useSession } from '../context/SessionContext';
 import { Lock, PenTool, RotateCcw } from 'lucide-react';
 
-export type AppMode = 'welcome' | 'ask' | 'bio' | 'message' | 'openers';
+export type AppMode = 'welcome' | 'ask' | 'bio' | 'message' | 'openers' | 'profile';
 
 interface HeaderProps {
   currentMode: AppMode;
@@ -29,6 +29,7 @@ export const Header: React.FC<HeaderProps> = ({ currentMode, onModeChange, onRes
     { id: 'bio', label: 'Sửa bio' },
     { id: 'message', label: 'Phân tích tin' },
     { id: 'openers', label: 'Gợi ý opener' },
+    { id: 'profile', label: 'Dán profile' },
   ];
 
   return (
@@ -64,7 +65,7 @@ export const Header: React.FC<HeaderProps> = ({ currentMode, onModeChange, onRes
               <button
                 key={mode.id}
                 onClick={() => onModeChange(mode.id)}
-                className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
                   isActive
                     ? 'bg-paper-card text-magenta-700 shadow-sm border border-paper-border/80'
                     : 'text-charcoal-muted hover:text-charcoal hover:bg-paper/50'

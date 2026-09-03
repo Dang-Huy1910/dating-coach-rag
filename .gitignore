@@ -25,6 +25,10 @@ data/index/*
 .idea/
 .vscode/
 .DS_Store
+Thumbs.db
+*.tmp
+*.swp
+*.log
 
 # Spec Kit machine-local pointer (also listed under .specify/.gitignore)
 .specify/feature.json

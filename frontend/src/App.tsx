@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { SessionProvider } from './context/SessionContext';
+import { SessionProvider, useSession } from './context/SessionContext';
 import { Header, AppMode } from './components/Header';
 import { HealthNotice } from './components/HealthNotice';
 import { Toast } from './components/Toast';
@@ -9,8 +9,10 @@ import { AskCoachView } from './views/AskCoachView';
 import { BioStudioView } from './views/BioStudioView';
 import { MessageView } from './views/MessageView';
 import { OpenersView } from './views/OpenersView';
+import { ProfileContextView } from './views/ProfileContextView';
 
 const AppContent: React.FC = () => {
+  const { sessionId } = useSession();
   const [currentMode, setCurrentMode] = useState<AppMode>('welcome');
   const [initialPrompt, setInitialPrompt] = useState<string>('');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -52,6 +54,9 @@ const AppContent: React.FC = () => {
             onNavigateToMessage={() => handleSelectMode('message')}
           />
         );
+        break;
+      case 'profile':
+        view = <ProfileContextView key={sessionId ?? 'none'} onToast={showToast} />;
         break;
       default:
         view = <WelcomeView onSelectMode={handleSelectMode} />;

@@ -9,8 +9,8 @@ function cn(...inputs: Array<string | false | null | undefined>) {
 interface ModePageProps {
   children: React.ReactNode;
   className?: string;
-  /** Chat-style pages can pass a different max width */
-  width?: 'chat' | 'studio';
+  /** chat = narrow ask thread; studio = single-column forms; wide = two-column bio/message */
+  width?: 'chat' | 'studio' | 'wide';
 }
 
 /** Shared page shell for coaching modes (Bio / Message / Openers / Profile). */
@@ -22,7 +22,7 @@ export const ModePage: React.FC<ModePageProps> = ({
   <div
     className={cn(
       'w-full mx-auto space-y-8 pb-16',
-      width === 'studio' ? 'max-w-5xl' : 'max-w-4xl',
+      width === 'wide' ? 'max-w-6xl' : width === 'chat' ? 'max-w-4xl' : 'max-w-5xl',
       className,
     )}
   >

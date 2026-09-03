@@ -137,7 +137,7 @@ export const MessageView: React.FC<MessageViewProps> = ({ onToast }) => {
   };
 
   return (
-    <ModePage>
+    <ModePage width="wide">
       <ModeHeader
         eyebrow="Phòng thực nghiệm đối thoại • Pacing"
         title="Phân tích tin nhắn trước khi gửi"
@@ -146,8 +146,8 @@ export const MessageView: React.FC<MessageViewProps> = ({ onToast }) => {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* Left: draft workbench */}
-        <div className="lg:col-span-5 flex flex-col gap-6">
-          <div className={modeCardClass}>
+        <div className="lg:col-span-5 flex flex-col gap-6 min-w-0">
+          <div className={`${modeCardClass} gap-4`}>
             <div className="flex items-center justify-between">
               <label
                 htmlFor="message-draft"

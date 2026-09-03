@@ -88,7 +88,7 @@ export const BioStudioView: React.FC<BioStudioViewProps> = ({ onToast }) => {
   };
 
   return (
-    <ModePage>
+    <ModePage width="wide">
       <ModeHeader
         eyebrow="Bio Refinement Studio"
         title="Chỉnh sửa Bio & Hồ sơ hẹn hò"
@@ -102,8 +102,8 @@ export const BioStudioView: React.FC<BioStudioViewProps> = ({ onToast }) => {
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        <div className="lg:col-span-5 flex flex-col gap-6">
-          <div className={`${modeCardClass} flex flex-col`}>
+        <div className="lg:col-span-5 flex flex-col gap-6 min-w-0">
+          <div className={`${modeCardClass} flex flex-col gap-4`}>
             <div className="flex items-center justify-between">
               <label
                 htmlFor="bio-draft"
@@ -181,7 +181,7 @@ export const BioStudioView: React.FC<BioStudioViewProps> = ({ onToast }) => {
           </div>
         </div>
 
-        <div className="lg:col-span-7 flex flex-col gap-6">
+        <div className="lg:col-span-7 flex flex-col gap-6 min-w-0">
           <section
             className="bg-paper-card p-6 sm:p-7 rounded-2xl shadow-md border border-paper-border flex flex-col gap-5"
             aria-labelledby="bio-coach-heading"

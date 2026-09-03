@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -9,6 +10,7 @@ from backend.app.eval.retrieval import evaluate_retrieval_compare
 from backend.app.eval.runner import run_quality_suite
 
 REPO = Path(__file__).resolve().parents[3]
+PUBLIC_DIR = REPO / "frontend" / "public"
 
 
 def _md_escape(text: str) -> str:
@@ -133,6 +135,25 @@ def main(argv: list[str] | None = None) -> int:
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(markdown, encoding="utf-8")
     print(f"Wrote {args.out}")
+
+    # Mirror for the Vite demo UI (footer badge + /EVAL.md).
+    if PUBLIC_DIR.is_dir():
+        (PUBLIC_DIR / "EVAL.md").write_text(markdown, encoding="utf-8")
+        summary = {
+            "generated_at": quality.get("generated_at"),
+            "quality_pass": f"{quality['pass_count']}/{quality['total']}",
+            "pass_rate": quality.get("pass_rate"),
+            "status": quality.get("status"),
+            "hit_at_4": retrieval["hash"].get("hit_at_k"),
+            "mrr": retrieval["hash"].get("mrr"),
+            "report_url": "/EVAL.md",
+        }
+        (PUBLIC_DIR / "eval-summary.json").write_text(
+            json.dumps(summary, indent=2) + "\n",
+            encoding="utf-8",
+        )
+        print(f"Wrote {PUBLIC_DIR / 'EVAL.md'} and eval-summary.json")
+
     print(
         f"Quality: {quality['pass_count']}/{quality['total']} "
         f"({quality['pass_rate']}%) status={quality['status']}"

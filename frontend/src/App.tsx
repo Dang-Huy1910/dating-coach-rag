@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { SessionProvider, useSession } from './context/SessionContext';
 import { Header, AppMode } from './components/Header';
 import { DisclaimerBar } from './components/DisclaimerBar';
+import { EvalBadge } from './components/EvalBadge';
 import { HealthNotice } from './components/HealthNotice';
 import { Toast } from './components/Toast';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -95,6 +96,7 @@ const AppContent: React.FC = () => {
           <p className="text-xs text-charcoal-muted font-mono">
             © Coach Dating Communication Lab. RAG-grounded relationship discernment workspace.
           </p>
+          <EvalBadge />
           <DisclaimerBar />
         </div>
       </footer>

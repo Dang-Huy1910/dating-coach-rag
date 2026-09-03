@@ -1,0 +1,9 @@
+{
+  "generated_at": "2026-09-03T20:24:40.612947+00:00",
+  "quality_pass": "12/12",
+  "pass_rate": 100.0,
+  "status": "pass",
+  "hit_at_4": 1.0,
+  "mrr": 0.8796,
+  "report_url": "/EVAL.md"
+}

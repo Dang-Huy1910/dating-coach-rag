@@ -70,26 +70,35 @@ export const CoachBubble: React.FC<CoachBubbleProps> = ({
         </div>
 
         {reply?.citations && reply.citations.length > 0 ? (
-          <div className="flex flex-wrap items-center gap-2 pl-1">
-            {reply.citations.map((cite, idx) => (
-              <button
-                key={`${cite.source_id}-${idx}`}
-                type="button"
-                onClick={() => onCitationClick?.(cite)}
-                className="group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-paper-subtle border border-paper-border hover:border-magenta-300 hover:bg-magenta-50 text-xs font-medium text-charcoal-soft transition-all cursor-pointer"
-              >
-                <BookOpen className="w-3 h-3 text-magenta-600" aria-hidden="true" />
-                <span>
-                  {cite.title}
-                  {cite.heading ? ` / ${cite.heading}` : ''}
-                </span>
-                <ChevronRight
-                  className="w-3.5 h-3.5 text-charcoal-faint group-hover:translate-x-0.5 transition-transform"
-                  aria-hidden="true"
-                />
-              </button>
-            ))}
+          <div className="pl-1 space-y-1.5">
+            <p className="text-[11px] font-mono uppercase tracking-wider text-magenta-700/90">
+              Neo từ thư viện kiến thức
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              {reply.citations.map((cite, idx) => (
+                <button
+                  key={`${cite.source_id}-${idx}`}
+                  type="button"
+                  onClick={() => onCitationClick?.(cite)}
+                  className="group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-magenta-50/80 border border-magenta-200/90 hover:border-magenta-400 hover:bg-magenta-100 text-xs font-medium text-charcoal transition-all cursor-pointer shadow-xs"
+                >
+                  <BookOpen className="w-3.5 h-3.5 text-magenta-600" aria-hidden="true" />
+                  <span>
+                    {cite.title}
+                    {cite.heading ? ` / ${cite.heading}` : ''}
+                  </span>
+                  <ChevronRight
+                    className="w-3.5 h-3.5 text-magenta-400 group-hover:translate-x-0.5 transition-transform"
+                    aria-hidden="true"
+                  />
+                </button>
+              ))}
+            </div>
           </div>
+        ) : reply && !reply.refused && reply.hedged ? (
+          <p className="pl-1 text-[11px] text-charcoal-muted/90 leading-relaxed">
+            Thư viện chưa đủ mạnh — câu trả lời được đánh dấu thận trọng, không bịa nguồn.
+          </p>
         ) : null}
 
         {reply?.refused ? (

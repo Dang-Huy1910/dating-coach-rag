@@ -2,15 +2,14 @@ import React, { useState } from 'react';
 import { useSession } from '../context/SessionContext';
 import { api, ApiError } from '../api/client';
 import { Citation, CoachReply } from '../api/types';
+import { AiStatusBadge } from '../components/AiStatusBadge';
 import { CitationModal } from '../components/CitationModal';
+import { CoachBubble, CoachBubbleLoading } from '../components/CoachBubble';
+import { CopyReadyCard } from '../components/CopyReadyCard';
+import { EmptyAiState } from '../components/EmptyAiState';
 import { SafetyBanner } from '../components/SafetyBanner';
 import {
   Bookmark,
-  BookOpen,
-  Check,
-  CheckCircle,
-  ChevronRight,
-  Copy,
   Edit3,
   Flame,
   History,
@@ -43,6 +42,7 @@ export const BioStudioView: React.FC<BioStudioViewProps> = ({ onToast }) => {
   const [activeCitation, setActiveCitation] = useState<Citation | null>(null);
   const [copied, setCopied] = useState<boolean>(false);
   const [analyzedAt, setAnalyzedAt] = useState<string | null>(null);
+  const [copiedReply, setCopiedReply] = useState(false);
 
   const hasResult = Boolean(coachReply && !coachReply.refused);
   const analysisPoints = coachReply?.analysis_points?.filter(Boolean) ?? [];
@@ -215,55 +215,17 @@ export const BioStudioView: React.FC<BioStudioViewProps> = ({ onToast }) => {
                   </p>
                 </div>
               </div>
-              <span
-                className={`px-2.5 py-1 rounded-full border text-xs font-semibold uppercase tracking-wider font-mono ${
-                  hasAiAnalysis
-                    ? 'bg-magenta-50 border-magenta-200 text-magenta-700'
-                    : isRefining
-                      ? 'bg-passion-50 border-passion-200 text-passion-700'
-                      : 'bg-paper-subtle border-paper-border text-charcoal-muted'
-                }`}
-              >
-                {hasAiAnalysis ? 'Từ Coach AI' : isRefining ? 'AI đang gen…' : 'Chờ AI'}
-              </span>
+              <AiStatusBadge
+                status={hasAiAnalysis ? 'ready' : isRefining ? 'loading' : 'idle'}
+              />
             </div>
 
             {coachReply?.refused ? (
               <SafetyBanner message={coachReply.reply} />
             ) : isRefining ? (
-              <div className="space-y-4" role="status">
-                <div className="bg-paper-subtle p-5 rounded-xl border border-dashed border-paper-border space-y-3">
-                  <div className="h-3 w-2/3 rounded-full bg-paper-border/80 animate-pulse" />
-                  <div className="h-3 w-full rounded-full bg-paper-border/70 animate-pulse" />
-                  <div className="h-3 w-5/6 rounded-full bg-paper-border/60 animate-pulse" />
-                  <div className="h-3 w-4/5 rounded-full bg-paper-border/50 animate-pulse" />
-                </div>
-                <p className="text-xs text-charcoal-muted font-mono">
-                  Đang gen đánh giá từ bio của bạn…
-                </p>
-              </div>
-            ) : hasResult && hasAiAnalysis ? (
-              <>
-                {coachReply?.citations && coachReply.citations.length > 0 && (
-                  <div className="flex flex-wrap items-center gap-2">
-                    {coachReply.citations.map((cite, idx) => (
-                      <button
-                        key={`${cite.source_id}-${idx}`}
-                        type="button"
-                        onClick={() => setActiveCitation(cite)}
-                        className="group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-paper-subtle border border-paper-border hover:border-magenta-300 hover:bg-magenta-50 text-xs font-medium text-charcoal-soft transition-all cursor-pointer"
-                      >
-                        <BookOpen className="w-3 h-3 text-magenta-600" aria-hidden="true" />
-                        <span>{cite.title}</span>
-                        <ChevronRight
-                          className="w-3.5 h-3.5 text-charcoal-faint group-hover:translate-x-0.5 transition-transform"
-                          aria-hidden="true"
-                        />
-                      </button>
-                    ))}
-                  </div>
-                )}
-
+              <CoachBubbleLoading label="Đang gen đánh giá từ bio…" />
+            ) : hasResult && hasAiAnalysis && coachReply ? (
+              <div className="space-y-4">
                 {analysisPoints.length > 0 && (
                   <div className="bg-paper-subtle p-5 rounded-xl border border-paper-border/80 space-y-3">
                     <div className="text-xs font-bold uppercase tracking-wider text-charcoal flex items-center gap-1.5">
@@ -283,106 +245,39 @@ export const BioStudioView: React.FC<BioStudioViewProps> = ({ onToast }) => {
                   </div>
                 )}
 
-                {coachReply?.reply?.trim() && (
-                  <div className="rounded-xl border border-magenta-100 bg-gradient-to-br from-magenta-50/40 via-white to-paper-subtle p-4 sm:p-5 space-y-3">
-                    <div className="text-[11px] font-mono font-semibold uppercase tracking-wider text-magenta-700">
-                      Nhận xét của Coach
-                    </div>
-                    <div className="text-sm text-charcoal leading-relaxed space-y-3">
-                      {coachReply.reply
-                        .split(/\n+/)
-                        .filter(Boolean)
-                        .map((para, idx) => (
-                          <p key={idx}>{para}</p>
-                        ))}
-                    </div>
-                  </div>
-                )}
-              </>
-            ) : (
-              <div className="rounded-xl border border-dashed border-paper-border bg-paper-subtle/70 px-5 py-10 text-center space-y-3">
-                <div className="mx-auto w-12 h-12 rounded-full bg-magenta-50 border border-magenta-200 text-magenta-600 flex items-center justify-center">
-                  <Sparkles className="w-5 h-5" aria-hidden="true" />
-                </div>
-                <div className="space-y-1.5 max-w-md mx-auto">
-                  <p className="text-sm font-semibold text-charcoal">
-                    Chưa có đánh giá & phân tích từ AI
-                  </p>
-                  <p className="text-xs text-charcoal-muted leading-relaxed">
-                    Checklist cứng đã tắt. Sau khi nhấn “Nhờ coach sửa”, phần này sẽ hiện bullets và
-                    nhận xét do Coach AI gen từ đúng bio bạn nhập.
-                  </p>
-                </div>
-                <p className="text-[11px] font-mono text-magenta-700/80">
-                  Bước tiếp theo → nút nhờ coach sửa bên trái
-                </p>
+                <CoachBubble
+                  reply={coachReply}
+                  timestamp={analyzedAt}
+                  subtitle="Đánh giá bio / profile"
+                  onCitationClick={setActiveCitation}
+                  onCopyReply={(text) => {
+                    navigator.clipboard.writeText(text).then(() => {
+                      setCopiedReply(true);
+                      onToast('Đã sao chép nhận xét Coach!');
+                      setTimeout(() => setCopiedReply(false), 2000);
+                    });
+                  }}
+                />
+                {copiedReply && <span className="sr-only">Đã sao chép</span>}
               </div>
+            ) : (
+              <EmptyAiState
+                title="Chưa có đánh giá & phân tích từ AI"
+                description="Sau khi nhấn “Nhờ coach sửa”, phần này sẽ hiện bullets và nhận xét do Coach AI gen từ đúng bio bạn nhập."
+                hint="Bước tiếp theo → nút nhờ coach sửa bên trái"
+              />
             )}
           </section>
 
-          {/* Separate copy-ready rewrite box (always its own card below analysis) */}
-          <section
-            className="bg-paper-card rounded-2xl p-6 sm:p-7 shadow-md border-2 border-magenta-200/90 relative overflow-hidden space-y-4"
-            aria-labelledby="bio-rewrite-heading"
-          >
-            <div
-              className="pointer-events-none absolute -right-8 -top-8 w-28 h-28 rounded-full bg-magenta-100/50 blur-2xl"
-              aria-hidden="true"
-            />
-            <div className="flex items-center justify-between gap-3 flex-wrap relative">
-              <div className="flex items-center gap-1.5 text-magenta-700">
-                <CheckCircle className="w-4 h-4" aria-hidden="true" />
-                <h3
-                  id="bio-rewrite-heading"
-                  className="text-xs font-bold uppercase tracking-wider font-mono"
-                >
-                  Bản sửa gợi ý (Copy-Ready)
-                </h3>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="bg-magenta-50 text-magenta-700 text-[11px] font-mono font-bold px-2.5 py-0.5 rounded-full border border-magenta-200">
-                  Copy-ready
-                </span>
-                <button
-                  type="button"
-                  onClick={handleCopy}
-                  disabled={!currentSuggestion}
-                  aria-disabled={!currentSuggestion}
-                  className={`inline-flex items-center justify-center gap-1.5 min-h-[44px] px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all border cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
-                    copied
-                      ? 'bg-magenta-600 text-white border-magenta-600 shadow-sm'
-                      : 'bg-magenta-600 hover:bg-magenta-700 text-white border-transparent shadow-glow-magenta'
-                  }`}
-                >
-                  {copied ? (
-                    <Check className="w-3.5 h-3.5" aria-hidden="true" />
-                  ) : (
-                    <Copy className="w-3.5 h-3.5" aria-hidden="true" />
-                  )}
-                  <span>{copied ? 'Đã chép!' : 'Sao chép'}</span>
-                </button>
-              </div>
-            </div>
-
-            <div className="bg-paper-subtle rounded-xl p-4 sm:p-5 border border-paper-border min-h-[6rem] relative">
-              {isRefining ? (
-                <div className="space-y-2.5 py-1" role="status" aria-label="Đang soạn bản sửa">
-                  <div className="h-3 w-full rounded-full bg-paper-border/70 animate-pulse" />
-                  <div className="h-3 w-5/6 rounded-full bg-paper-border/60 animate-pulse" />
-                  <div className="h-3 w-2/3 rounded-full bg-paper-border/50 animate-pulse" />
-                </div>
-              ) : currentSuggestion ? (
-                <blockquote className="font-editorial text-lg sm:text-xl text-charcoal italic leading-relaxed py-1">
-                  “{currentSuggestion}”
-                </blockquote>
-              ) : (
-                <p className="text-sm text-charcoal-muted leading-relaxed">
-                  Bản bio viết lại sẽ hiện ở box này (tách riêng khỏi phần đánh giá phía trên) sau khi
-                  Coach AI trả lời.
-                </p>
-              )}
-            </div>
-          </section>
+          <CopyReadyCard
+            title="Bản sửa gợi ý (Copy-Ready)"
+            content={currentSuggestion}
+            isLoading={isRefining}
+            emptyText="Bản bio viết lại sẽ hiện ở box riêng này sau khi Coach AI trả lời."
+            onCopy={handleCopy}
+            copied={copied}
+            footerHint="Tách riêng khỏi phần đánh giá phía trên • Copy khi sẵn sàng"
+          />
 
           {hasResult && coachReply?.citations && coachReply.citations.length > 0 && (
             <div className="bg-paper-card rounded-2xl p-5 border border-paper-border space-y-2">

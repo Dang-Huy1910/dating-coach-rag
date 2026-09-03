@@ -3,17 +3,11 @@ import { useSession } from '../context/SessionContext';
 import { api, ApiError } from '../api/client';
 import { Citation, CoachReply } from '../api/types';
 import { CitationModal } from '../components/CitationModal';
-import { SafetyBanner } from '../components/SafetyBanner';
+import { CoachBubble } from '../components/CoachBubble';
 import {
   ArrowUp,
-  Bookmark,
-  ChevronRight,
-  Copy,
   PenTool,
   Sparkles,
-  ThumbsDown,
-  ThumbsUp,
-  BookOpen,
   Lock,
   AlertCircle
 } from 'lucide-react';
@@ -37,7 +31,6 @@ export const AskCoachView: React.FC<AskCoachViewProps> = ({ initialPrompt, onToa
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [activeCitation, setActiveCitation] = useState<Citation | null>(null);
-  const [likedTurns, setLikedTurns] = useState<Record<string, 'up' | 'down'>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const starterPrompts = [
@@ -232,103 +225,14 @@ export const AskCoachView: React.FC<AskCoachViewProps> = ({ initialPrompt, onToa
                 </div>
               </div>
 
-              {/* Coach Bubble */}
-              <div className="flex flex-col gap-2 max-w-[95%] sm:max-w-[90%]">
-                <div className="bg-paper-card rounded-2xl rounded-tl-none p-6 sm:p-7 shadow-sm border border-paper-border relative overflow-hidden space-y-4">
-                  {/* Left decorative bar */}
-                  <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-passion"></div>
-
-                  {/* Coach Meta */}
-                  <div className="flex items-center justify-between pb-2 border-b border-paper-border/60">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-full bg-magenta-50 border border-magenta-200 flex items-center justify-center text-magenta-700 font-bold text-xs">
-                        C
-                      </div>
-                      <div>
-                        <div className="text-xs font-bold text-charcoal">
-                          Dating Coach Lâm Uyên
-                        </div>
-                        <div className="text-[11px] text-charcoal-muted">
-                          Tham vấn cấu trúc đối thoại cá nhân
-                        </div>
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={() => handleCopy(msg.coachReply.reply)}
-                      className="text-charcoal-muted hover:text-magenta-600 p-1.5 rounded-lg hover:bg-paper-subtle transition-colors"
-                      title="Sao chép nội dung"
-                    >
-                      <Copy className="w-4 h-4" />
-                    </button>
-                  </div>
-
-                  {/* Safety Refusal vs Normal Reply */}
-                  {msg.coachReply.refused ? (
-                    <SafetyBanner message={msg.coachReply.reply} />
-                  ) : (
-                    <div className="text-sm sm:text-base text-charcoal leading-relaxed space-y-3 font-normal">
-                      {msg.coachReply.reply.split('\n\n').map((paragraph, pIdx) => (
-                        <p key={pIdx}>{paragraph}</p>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Citations Row (RAG Grounding) */}
-                  {msg.coachReply.citations && msg.coachReply.citations.length > 0 && (
-                    <div className="pt-4 border-t border-paper-border/80 flex flex-col gap-2 bg-paper-subtle/50 -mx-6 sm:-mx-7 -mb-6 sm:-mb-7 p-4 sm:p-5 rounded-b-2xl">
-                      <div className="flex items-center gap-1.5 text-magenta-700 font-mono text-xs font-semibold uppercase tracking-wider">
-                        <Bookmark className="w-3.5 h-3.5" />
-                        <span>Cơ sở trích xuất (RAG Grounding)</span>
-                      </div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        {msg.coachReply.citations.map((cite, cIdx) => (
-                          <button
-                            key={cIdx}
-                            type="button"
-                            onClick={() => setActiveCitation(cite)}
-                            className="group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-paper-card border border-paper-border hover:border-magenta-300 hover:bg-magenta-50 text-xs font-medium text-charcoal-soft transition-all shadow-xs cursor-pointer"
-                          >
-                            <BookOpen className="w-3 h-3 text-magenta-600" />
-                            <span>{cite.title}</span>
-                            <ChevronRight className="w-3.5 h-3.5 text-charcoal-faint group-hover:translate-x-0.5 transition-transform" />
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Turn Feedback */}
-                <div className="flex items-center justify-between px-2 text-[11px] text-charcoal-muted">
-                  <div className="flex items-center gap-2 font-mono">
-                    <span>Coach Assistant</span>
-                    <span>•</span>
-                    <span>{msg.timestamp}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => setLikedTurns((prev) => ({ ...prev, [msg.id]: 'up' }))}
-                      className={`p-1 rounded hover:bg-paper-card transition-colors ${
-                        likedTurns[msg.id] === 'up' ? 'text-magenta-600' : 'text-charcoal-faint'
-                      }`}
-                      title="Hữu ích"
-                    >
-                      <ThumbsUp className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setLikedTurns((prev) => ({ ...prev, [msg.id]: 'down' }))}
-                      className={`p-1 rounded hover:bg-paper-card transition-colors ${
-                        likedTurns[msg.id] === 'down' ? 'text-passion-600' : 'text-charcoal-faint'
-                      }`}
-                      title="Chưa chuẩn xác"
-                    >
-                      <ThumbsDown className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
+              <div className="max-w-[95%] sm:max-w-[90%]">
+                <CoachBubble
+                  reply={msg.coachReply}
+                  timestamp={msg.timestamp}
+                  subtitle="Tham vấn cấu trúc đối thoại cá nhân"
+                  onCitationClick={setActiveCitation}
+                  onCopyReply={(text) => handleCopy(text)}
+                />
               </div>
             </div>
           ))}

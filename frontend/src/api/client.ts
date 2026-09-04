@@ -41,6 +41,37 @@ function friendlyNetworkMessage(err: unknown): string {
   return raw || 'Không thể kết nối đến máy chủ API.';
 }
 
+function cleanErrorMessage(detail: string, status: number): string {
+  if (status === 503 || /high demand|temporarily unavailable|503/i.test(detail)) {
+    return 'Máy chủ AI hiện đang có lượng truy cập cao đột biến. Bạn hãy bấm "Thử lại" sau ít giây nhé.';
+  }
+  if (status === 429 || /quota|rate limit|429/i.test(detail)) {
+    return 'Hệ thống đang tạm thời chạm giới hạn lượt gửi trong phút. Bạn hãy đợi khoảng 1 phút rồi thử lại nhé.';
+  }
+  if (status === 403 || status === 401 || /api key|unauthorized|permission_denied/i.test(detail)) {
+    return 'Khóa API (API Key) không hợp lệ hoặc đã hết hạn mức. Vui lòng kiểm tra lại cấu hình trên hệ thống.';
+  }
+  // If the backend sent a raw JSON error string, extract friendly message
+  if (detail.includes('{"error":') || detail.includes('{ "error":')) {
+    try {
+      const match = detail.match(/\{.*\}/s);
+      if (match) {
+        const parsed = JSON.parse(match[0]);
+        if (parsed.error?.message) {
+          const msg = parsed.error.message;
+          if (/high demand/i.test(msg)) {
+            return 'Máy chủ AI hiện đang quá tải lượng truy cập đột biến. Bạn hãy bấm "Thử lại" sau ít giây nhé.';
+          }
+          return `Dịch vụ AI thông báo: ${msg}`;
+        }
+      }
+    } catch {
+      // fallback
+    }
+  }
+  return detail;
+}
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const cleanPath = path.startsWith('/') ? path : `/${path}`;
   const url = `${API_BASE}${cleanPath}`;
@@ -72,11 +103,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
           detail = response.statusText;
         }
       }
-      if (response.status === 429) {
-        detail =
-          detail ||
-          'LLM đang hết hạn mức (quota). Đợi vài phút hoặc đổi model/provider.';
-      }
+      detail = cleanErrorMessage(detail, response.status);
       throw new ApiError(detail, response.status, code);
     }
 

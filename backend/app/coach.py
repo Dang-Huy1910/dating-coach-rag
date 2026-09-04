@@ -77,7 +77,16 @@ def _complete_groq(
     except LLMProviderError:
         raise
     except Exception as exc:  # noqa: BLE001 — surface provider failures to API layer
-        raise LLMProviderError(f"Groq API lỗi: {exc}", status_code=502) from exc
+        err_str = str(exc)
+        if "429" in err_str or "rate_limit" in err_str.lower():
+            raise LLMProviderError(
+                "Hệ thống đang tạm thời chạm giới hạn lượt gửi trong phút. Bạn hãy đợi khoảng 1 phút rồi thử lại nhé.",
+                status_code=429,
+            ) from exc
+        raise LLMProviderError(
+            "Không thể kết nối đến dịch vụ AI lúc này. Bạn vui lòng thử lại sau giây lát.",
+            status_code=502,
+        ) from exc
     return response.choices[0].message.content or ""
 
 
@@ -89,7 +98,11 @@ def _complete_gemini(
     temperature: float = 0.4,
 ) -> str:
     if not settings.gemini_api_key:
-        raise LLMProviderError("GEMINI_API_KEY is missing", status_code=500)
+        raise LLMProviderError(
+            "Chưa cấu hình GEMINI_API_KEY trên máy chủ. Vui lòng thiết lập khóa API.",
+            status_code=500,
+        )
+    import time
     import httpx
 
     model = (settings.gemini_model or "gemini-flash-lite-latest").strip()
@@ -108,32 +121,77 @@ def _complete_gemini(
         "contents": [{"role": "user", "parts": parts}],
         "generationConfig": {"temperature": temperature},
     }
-    with httpx.Client(timeout=60.0) as client:
-        response = client.post(
-            url,
-            params={"key": settings.gemini_api_key},
-            json=payload,
-        )
-    if response.status_code >= 400:
-        detail = response.text[:500]
-        if response.status_code == 429:
+
+    max_attempts = 3
+    last_status = 500
+    last_text = ""
+
+    for attempt in range(max_attempts):
+        try:
+            with httpx.Client(timeout=60.0) as client:
+                response = client.post(
+                    url,
+                    params={"key": settings.gemini_api_key},
+                    json=payload,
+                )
+        except httpx.RequestError as exc:
+            if attempt < max_attempts - 1:
+                time.sleep(1.5 * (attempt + 1))
+                continue
             raise LLMProviderError(
-                "Gemini đang hết hạn mức (quota). Đợi vài phút hoặc đổi model/provider.",
-                status_code=429,
-            )
+                "Không thể kết nối đến máy chủ AI. Vui lòng kiểm tra lại mạng hoặc thử lại sau.",
+                status_code=502,
+            ) from exc
+
+        if response.status_code == 200:
+            data = response.json()
+            try:
+                parts = data["candidates"][0]["content"]["parts"]
+                return "".join(str(p.get("text", "")) for p in parts).strip()
+            except (KeyError, IndexError, TypeError) as exc:
+                raise LLMProviderError(
+                    "Dịch vụ AI phản hồi dữ liệu không đúng định dạng. Vui lòng thử lại.",
+                    status_code=502,
+                ) from exc
+
+        last_status = response.status_code
+        last_text = response.text
+
+        # Retry on temporary high demand (503) or rate limit (429)
+        if last_status in {503, 429} and attempt < max_attempts - 1:
+            time.sleep(2.0 * (attempt + 1))
+            continue
+        break
+
+    if last_status == 503:
         raise LLMProviderError(
-            f"Gemini API lỗi {response.status_code}: {detail}",
-            status_code=502,
+            "Máy chủ AI hiện đang có lượng truy cập cao đột biến. Bạn hãy bấm 'Thử lại' sau ít giây nhé.",
+            status_code=503,
         )
-    data = response.json()
-    try:
-        parts = data["candidates"][0]["content"]["parts"]
-        return "".join(str(p.get("text", "")) for p in parts).strip()
-    except (KeyError, IndexError, TypeError) as exc:
+    if last_status == 429:
         raise LLMProviderError(
-            f"Phản hồi Gemini không hợp lệ: {data!r}",
-            status_code=502,
-        ) from exc
+            "Hệ thống đang tạm thời chạm giới hạn lượt gửi trong phút. Bạn hãy đợi khoảng 1 phút rồi thử lại nhé.",
+            status_code=429,
+        )
+    if last_status in {401, 403}:
+        raise LLMProviderError(
+            "Khóa API (API Key) không hợp lệ hoặc đã hết hạn mức. Vui lòng kiểm tra lại cấu hình trên hệ thống.",
+            status_code=403,
+        )
+
+    # Try extracting human-readable message from Google JSON response
+    try:
+        err_json = json.loads(last_text)
+        raw_msg = err_json.get("error", {}).get("message", "")
+    except Exception:
+        raw_msg = ""
+
+    user_msg = (
+        f"Dịch vụ AI tạm thời gián đoạn: {raw_msg}"
+        if raw_msg
+        else f"Dịch vụ AI phản hồi không thành công ({last_status}). Vui lòng thử lại sau giây lát."
+    )
+    raise LLMProviderError(user_msg, status_code=502)
 
 
 def complete(

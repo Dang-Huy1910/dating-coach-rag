@@ -22,6 +22,25 @@ interface CoachBubbleProps {
   children?: React.ReactNode;
 }
 
+function extractCleanReply(text: string): string {
+  const trimmed = (text || '').trim();
+  if (trimmed.startsWith('{') && trimmed.includes('"reply"')) {
+    try {
+      const cleaned = trimmed.replace(/\\([^"\\/bfnrtu])/g, '$1');
+      const parsed = JSON.parse(cleaned);
+      if (typeof parsed.reply === 'string' && parsed.reply) {
+        return parsed.reply;
+      }
+    } catch {
+      const match = trimmed.match(/"reply"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+      if (match && match[1]) {
+        return match[1].replace(/\\"/g, '"').replace(/\\n/g, '\n');
+      }
+    }
+  }
+  return trimmed;
+}
+
 export const CoachBubble: React.FC<CoachBubbleProps> = ({
   reply,
   timestamp,
@@ -33,9 +52,10 @@ export const CoachBubble: React.FC<CoachBubbleProps> = ({
 }) => {
   const [feedback, setFeedback] = useState<'up' | 'down' | null>(null);
   const [copied, setCopied] = useState(false);
+  const cleanReply = extractCleanReply(reply?.reply || '');
 
   const handleCopy = () => {
-    const text = reply?.reply?.trim();
+    const text = cleanReply.trim();
     if (!text) return;
     const done = () => {
       setCopied(true);
@@ -102,10 +122,10 @@ export const CoachBubble: React.FC<CoachBubbleProps> = ({
         ) : null}
 
         {reply?.refused ? (
-          <SafetyBanner message={reply.reply || 'Yêu cầu này không thể hỗ trợ.'} />
+          <SafetyBanner message={cleanReply || 'Yêu cầu này không thể hỗ trợ.'} />
         ) : (
           <div className="pl-1 rounded-xl bg-gradient-to-br from-magenta-50/30 via-transparent to-paper-subtle/40 -mx-1 px-3 py-3 sm:px-4 sm:py-3.5 border border-transparent">
-            <CoachMarkdown content={reply?.reply || ''} />
+            <CoachMarkdown content={cleanReply || ''} />
           </div>
         )}
 

@@ -191,7 +191,31 @@ export const ProfileContextView: React.FC<ProfileContextViewProps> = ({ onToast 
         question: question.trim() || null,
         images,
       });
-      setCoachReply(reply);
+      let replyData = reply;
+      if (
+        replyData.reply &&
+        replyData.reply.trim().startsWith('{') &&
+        replyData.reply.includes('"reply"')
+      ) {
+        try {
+          const cleaned = replyData.reply.trim().replace(/\\([^"\\/bfnrtu])/g, '$1');
+          const parsed = JSON.parse(cleaned);
+          if (parsed.reply) {
+            replyData = {
+              ...replyData,
+              reply: parsed.reply,
+              openers:
+                Array.isArray(parsed.openers) && parsed.openers.length > 0
+                  ? parsed.openers
+                  : replyData.openers,
+              improved_draft: parsed.improved_draft || replyData.improved_draft,
+            };
+          }
+        } catch {
+          // ignore
+        }
+      }
+      setCoachReply(replyData);
       const now = new Date();
       setAnalyzedAt(`${now.getHours()}:${now.getMinutes().toString().padStart(2, '0')}`);
     } catch (err: unknown) {
@@ -437,6 +461,33 @@ export const ProfileContextView: React.FC<ProfileContextViewProps> = ({ onToast 
               navigator.clipboard.writeText(text).then(() => onToast('Đã sao chép nhận xét Coach!'));
             }}
           />
+          {coachReply?.improved_draft && (
+            <div className="bg-paper-card rounded-2xl p-6 shadow-sm border-2 border-magenta-200/80 flex flex-col justify-between gap-4">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-charcoal uppercase tracking-wider">
+                    Gợi ý Bio / Tin nhắn từ ngữ cảnh
+                  </span>
+                  <span className="text-[11px] font-mono text-magenta-700 bg-magenta-50 px-2.5 py-0.5 rounded-full border border-magenta-200">
+                    Copy-ready
+                  </span>
+                </div>
+                <p className="font-editorial text-base sm:text-lg text-charcoal italic leading-relaxed">
+                  “{coachReply.improved_draft}”
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(coachReply.improved_draft!).then(() => onToast('Đã sao chép gợi ý!'));
+                }}
+                className="inline-flex items-center justify-center gap-1.5 min-h-[44px] px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-magenta-600 hover:bg-magenta-700 text-white transition-all self-end cursor-pointer"
+              >
+                <Copy className="w-3.5 h-3.5" aria-hidden="true" />
+                <span>Sao chép</span>
+              </button>
+            </div>
+          )}
           {aiOpeners.length > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {aiOpeners.map((text, idx) => (

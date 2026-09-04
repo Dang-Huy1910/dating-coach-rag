@@ -183,17 +183,33 @@ def _citations(hits: list[Hit]) -> list[Citation]:
     return cites
 
 
+def _clean_json_candidate(text: str) -> str:
+    s = text.strip()
+    if s.startswith("```"):
+        s = re.sub(r"^```(?:json)?\s*", "", s, flags=re.IGNORECASE)
+        s = re.sub(r"\s*```$", "", s).strip()
+    return s
+
+
+def _repair_json_escapes(s: str) -> str:
+    return re.sub(r"\\([^\"\\/bfnrtu])", r"\1", s)
+
+
 def _parse_model_json(raw: str) -> dict:
     text = raw.strip()
-    try:
-        return json.loads(text)
-    except json.JSONDecodeError:
-        match = _JSON_BLOCK.search(text)
-        if match:
+    cleaned = _clean_json_candidate(text)
+    match = _JSON_BLOCK.search(cleaned) or _JSON_BLOCK.search(text)
+    candidates = [cleaned, text]
+    if match:
+        candidates.insert(0, match.group(0))
+
+    for c in candidates:
+        for attempt in [c, _repair_json_escapes(c)]:
             try:
-                return json.loads(match.group(0))
-            except json.JSONDecodeError:
+                return json.loads(attempt, strict=False)
+            except (json.JSONDecodeError, ValueError):
                 pass
+
     return {"reply": text, "improved_draft": None, "openers": None}
 
 
@@ -506,7 +522,7 @@ def _handle_profile_context(
         hedged=False,
         disclaimer=DISCLAIMER_TEXT,
         intent=intent,
-        improved_draft=None,
+        improved_draft=(str(parsed["improved_draft"]) if parsed.get("improved_draft") else None),
         openers=opener_list,
         tone=None,
         clarity=None,

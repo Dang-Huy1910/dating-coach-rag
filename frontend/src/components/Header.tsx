@@ -1,6 +1,6 @@
 import React from 'react';
 import { useSession } from '../context/SessionContext';
-import { Lock, PenTool, RotateCcw } from 'lucide-react';
+import { Lock, RotateCcw } from 'lucide-react';
 
 export type AppMode = 'welcome' | 'ask' | 'bio' | 'message' | 'openers' | 'profile' | 'simulate' | 'library';
 
@@ -41,11 +41,11 @@ export const Header: React.FC<HeaderProps> = ({ currentMode, onModeChange, onRes
           onClick={() => onModeChange('welcome')}
           className="flex items-center gap-3 text-left group transition-all"
         >
-          <div className="w-10 h-10 rounded-xl bg-gradient-passion p-0.5 shadow-glow-magenta group-hover:scale-105 transition-transform flex items-center justify-center">
-            <div className="w-full h-full bg-paper-card rounded-[10px] flex items-center justify-center text-magenta-600">
-              <PenTool className="w-5 h-5" />
-            </div>
-          </div>
+          <img
+            src="/logo.png"
+            alt="Dating Coach Logo"
+            className="w-10 h-10 rounded-xl object-contain shadow-sm border border-paper-border group-hover:scale-105 group-hover:shadow-glow-magenta transition-all"
+          />
           <div>
             <div className="font-editorial text-2xl font-normal text-charcoal leading-none tracking-tight group-hover:text-magenta-700 transition-colors">
               Coach

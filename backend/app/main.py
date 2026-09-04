@@ -19,9 +19,18 @@ class NormalizePathMiddleware(BaseHTTPMiddleware):
         return await call_next(request)
 
 
+from backend.app.rag.ingest import ingest
+from backend.app.rag.retrieve import index_ready
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     app.state.store = SessionStore()
+    if not index_ready():
+        try:
+            ingest()
+        except Exception:
+            pass
     yield
 
 

@@ -105,11 +105,19 @@ def _complete_gemini(
     import time
     import httpx
 
-    model = (settings.gemini_model or "gemini-flash-lite-latest").strip()
-    url = (
-        f"https://generativelanguage.googleapis.com/v1beta/models/"
-        f"{model}:generateContent"
-    )
+    primary_model = (settings.gemini_model or "gemini-1.5-flash").strip()
+    candidate_models = [primary_model]
+    for m in [
+        "gemini-1.5-flash",
+        "gemini-1.5-flash-latest",
+        "gemini-2.0-flash",
+        "gemini-flash-lite-latest",
+        "gemini-1.5-flash-8b",
+        "gemini-1.5-pro",
+    ]:
+        if m not in candidate_models:
+            candidate_models.append(m)
+
     parts: list[dict] = [{"text": prompt}]
     for image in images or []:
         parts.append(
@@ -122,46 +130,46 @@ def _complete_gemini(
         "generationConfig": {"temperature": temperature},
     }
 
-    max_attempts = 3
     last_status = 500
     last_text = ""
 
-    for attempt in range(max_attempts):
-        try:
-            with httpx.Client(timeout=60.0) as client:
-                response = client.post(
-                    url,
-                    params={"key": settings.gemini_api_key},
-                    json=payload,
-                )
-        except httpx.RequestError as exc:
-            if attempt < max_attempts - 1:
-                time.sleep(1.5 * (attempt + 1))
-                continue
-            raise LLMProviderError(
-                "Không thể kết nối đến máy chủ AI. Vui lòng kiểm tra lại mạng hoặc thử lại sau.",
-                status_code=502,
-            ) from exc
-
-        if response.status_code == 200:
-            data = response.json()
+    for model in candidate_models:
+        url = (
+            f"https://generativelanguage.googleapis.com/v1beta/models/"
+            f"{model}:generateContent"
+        )
+        for attempt in range(2):
             try:
-                parts = data["candidates"][0]["content"]["parts"]
-                return "".join(str(p.get("text", "")) for p in parts).strip()
-            except (KeyError, IndexError, TypeError) as exc:
-                raise LLMProviderError(
-                    "Dịch vụ AI phản hồi dữ liệu không đúng định dạng. Vui lòng thử lại.",
-                    status_code=502,
-                ) from exc
+                with httpx.Client(timeout=45.0) as client:
+                    response = client.post(
+                        url,
+                        params={"key": settings.gemini_api_key},
+                        json=payload,
+                    )
+            except httpx.RequestError:
+                if attempt == 0:
+                    time.sleep(1.0)
+                    continue
+                break
 
-        last_status = response.status_code
-        last_text = response.text
+            if response.status_code == 200:
+                data = response.json()
+                try:
+                    content_parts = data["candidates"][0]["content"]["parts"]
+                    return "".join(str(p.get("text", "")) for p in content_parts).strip()
+                except (KeyError, IndexError, TypeError):
+                    break
 
-        # Retry on temporary high demand (503) or rate limit (429)
-        if last_status in {503, 429} and attempt < max_attempts - 1:
-            time.sleep(2.0 * (attempt + 1))
-            continue
-        break
+            last_status = response.status_code
+            last_text = response.text
+
+            # If 503 (high demand) or 404 (deprecated/unavailable), switch immediately to next model
+            if last_status in {503, 404}:
+                break
+            if last_status == 429 and attempt == 0:
+                time.sleep(1.5)
+                continue
+            break
 
     if last_status == 503:
         raise LLMProviderError(
@@ -209,13 +217,27 @@ def complete(
             prompt, settings, images=images, system_prompt=system_prompt, temperature=temperature
         )
     if provider == "groq":
-        return _complete_groq(
-            prompt, settings, images=images, system_prompt=system_prompt, temperature=temperature
-        )
+        try:
+            return _complete_groq(
+                prompt, settings, images=images, system_prompt=system_prompt, temperature=temperature
+            )
+        except Exception:
+            if settings.gemini_api_key:
+                return _complete_gemini(
+                    prompt, settings, images=images, system_prompt=system_prompt, temperature=temperature
+                )
+            raise
     if provider in {"gemini", "google"}:
-        return _complete_gemini(
-            prompt, settings, images=images, system_prompt=system_prompt, temperature=temperature
-        )
+        try:
+            return _complete_gemini(
+                prompt, settings, images=images, system_prompt=system_prompt, temperature=temperature
+            )
+        except Exception:
+            if settings.groq_api_key:
+                return _complete_groq(
+                    prompt, settings, images=images, system_prompt=system_prompt, temperature=temperature
+                )
+            raise
     raise RuntimeError(f"Unsupported LLM_PROVIDER={settings.llm_provider}")
 
 

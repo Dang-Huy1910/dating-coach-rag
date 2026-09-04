@@ -14,7 +14,7 @@ import {
 } from './types';
 
 // Empty string = same-origin via Vite proxy (/v1, /health → :8000). Avoids CORS-on-500 looking like "network error".
-const API_BASE = import.meta.env.VITE_API_BASE ?? '';
+const API_BASE = (import.meta.env.VITE_API_BASE ?? '').replace(/\/+$/, '');
 
 class ApiError extends Error {
   detail: string;
@@ -39,7 +39,8 @@ function friendlyNetworkMessage(err: unknown): string {
 }
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const url = `${API_BASE}${path}`;
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+  const url = `${API_BASE}${cleanPath}`;
   const headers = {
     'Content-Type': 'application/json',
     ...(options.headers || {}),

@@ -6,6 +6,9 @@ import {
   ErrorResponse,
   HealthResponse,
   OpenersRequest,
+  KnowledgeListResponse,
+  KnowledgeReindexResponse,
+  KnowledgeUploadResponse,
   ProfileContextRequest,
   SessionResponse,
 } from './types';
@@ -146,6 +149,47 @@ export const api = {
     return request<CoachReply>(`/v1/sessions/${sessionId}/profile-context`, {
       method: 'POST',
       body: JSON.stringify(body),
+    });
+  },
+
+  listKnowledge: async (): Promise<KnowledgeListResponse> => {
+    return request<KnowledgeListResponse>('/v1/knowledge');
+  },
+
+  uploadKnowledge: async (file: File): Promise<KnowledgeUploadResponse> => {
+    const url = `${API_BASE}/v1/knowledge/upload`;
+    const form = new FormData();
+    form.append('file', file);
+    try {
+      const response = await fetch(url, { method: 'POST', body: form });
+      if (!response.ok) {
+        let detail = `Yêu cầu thất bại (${response.status})`;
+        try {
+          const errorJson: ErrorResponse = await response.json();
+          if (typeof errorJson.detail === 'string' && errorJson.detail) {
+            detail = errorJson.detail;
+          }
+        } catch {
+          /* ignore */
+        }
+        throw new ApiError(detail, response.status);
+      }
+      return (await response.json()) as KnowledgeUploadResponse;
+    } catch (err: unknown) {
+      if (err instanceof ApiError) throw err;
+      throw new ApiError(friendlyNetworkMessage(err), 0);
+    }
+  },
+
+  deleteKnowledge: async (sourceId: string): Promise<void> => {
+    return request<void>(`/v1/knowledge/${encodeURIComponent(sourceId)}`, {
+      method: 'DELETE',
+    });
+  },
+
+  reindexKnowledge: async (): Promise<KnowledgeReindexResponse> => {
+    return request<KnowledgeReindexResponse>('/v1/knowledge/reindex', {
+      method: 'POST',
     });
   },
 };

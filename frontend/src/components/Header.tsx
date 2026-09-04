@@ -2,7 +2,7 @@ import React from 'react';
 import { useSession } from '../context/SessionContext';
 import { Lock, PenTool, RotateCcw } from 'lucide-react';
 
-export type AppMode = 'welcome' | 'ask' | 'bio' | 'message' | 'openers' | 'profile';
+export type AppMode = 'welcome' | 'ask' | 'bio' | 'message' | 'openers' | 'profile' | 'library';
 
 interface HeaderProps {
   currentMode: AppMode;
@@ -29,6 +29,7 @@ export const Header: React.FC<HeaderProps> = ({ currentMode, onModeChange, onRes
     { id: 'message', label: 'Phân tích tin' },
     { id: 'openers', label: 'Gợi ý opener' },
     { id: 'profile', label: 'Dán profile' },
+    { id: 'library', label: 'Thư viện' },
   ];
 
   return (

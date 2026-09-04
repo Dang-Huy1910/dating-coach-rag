@@ -12,6 +12,7 @@ import { BioStudioView } from './views/BioStudioView';
 import { MessageView } from './views/MessageView';
 import { OpenersView } from './views/OpenersView';
 import { ProfileContextView } from './views/ProfileContextView';
+import { KnowledgeView } from './views/KnowledgeView';
 
 const AppContent: React.FC = () => {
   const { sessionId } = useSession();
@@ -59,6 +60,9 @@ const AppContent: React.FC = () => {
         break;
       case 'profile':
         view = <ProfileContextView key={sessionId ?? 'none'} onToast={showToast} />;
+        break;
+      case 'library':
+        view = <KnowledgeView onToast={showToast} />;
         break;
       default:
         view = <WelcomeView onSelectMode={handleSelectMode} />;

@@ -78,3 +78,36 @@ export interface ProfileContextRequest {
   images?: ProfileImage[];
 }
 
+export interface KnowledgeFormat {
+  ext: string;
+  label: string;
+  note: string;
+}
+
+export interface KnowledgeSourceInfo {
+  source_id: string;
+  title: string;
+  path: string;
+  kind: 'curated' | 'upload' | string;
+  bytes?: number | null;
+  updated_at?: string | null;
+}
+
+export interface KnowledgeListResponse {
+  formats: KnowledgeFormat[];
+  sources: KnowledgeSourceInfo[];
+  index_ready: boolean;
+  chunk_count?: number | null;
+}
+
+export interface KnowledgeUploadResponse {
+  source: KnowledgeSourceInfo;
+  chunk_count: number;
+  detail: string;
+}
+
+export interface KnowledgeReindexResponse {
+  chunk_count: number;
+  detail: string;
+}
+

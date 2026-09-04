@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, File, HTTPException, Request, UploadFile
 from fastapi.responses import JSONResponse
 from sse_starlette.sse import EventSourceResponse
 
@@ -14,10 +14,17 @@ from backend.app.models import (
     DisclaimerResponse,
     DraftRequest,
     HealthResponse,
+    KnowledgeFormat,
+    KnowledgeListResponse,
+    KnowledgeReindexResponse,
+    KnowledgeSourceInfo,
+    KnowledgeUploadResponse,
     OpenersRequest,
     ProfileContextRequest,
     SessionResponse,
 )
+from backend.app.rag import uploads as knowledge_uploads
+from backend.app.rag.retrieve import get_loaded_index
 from backend.app.profile_gate import classify, has_visible_context, validate_images
 from backend.app.prompts import PROFILE_CONTEXT_EXTRA
 from backend.app.public_fetch import fetch_public_profile, merge_fetched_text
@@ -254,3 +261,69 @@ def profile_context(session_id: UUID, body: ProfileContextRequest, request: Requ
         extra=PROFILE_CONTEXT_EXTRA,
         profile_request=body,
     )
+
+
+@router.get("/v1/knowledge", response_model=KnowledgeListResponse)
+def list_knowledge() -> KnowledgeListResponse:
+    store = get_loaded_index()
+    chunk_count = store.index.ntotal if store is not None and store.ready else None
+    sources = [
+        KnowledgeSourceInfo(
+            source_id=s.source_id,
+            title=s.title,
+            path=s.path,
+            kind=s.kind,
+            bytes=s.bytes,
+            updated_at=s.updated_at,
+        )
+        for s in knowledge_uploads.list_sources()
+    ]
+    formats = [KnowledgeFormat(**row) for row in knowledge_uploads.supported_formats()]
+    return KnowledgeListResponse(
+        formats=formats,
+        sources=sources,
+        index_ready=index_ready(),
+        chunk_count=chunk_count,
+    )
+
+
+@router.post("/v1/knowledge/upload", response_model=KnowledgeUploadResponse)
+async def upload_knowledge(file: UploadFile = File(...)) -> KnowledgeUploadResponse:
+    filename = file.filename or ""
+    data = await file.read()
+    try:
+        source = knowledge_uploads.save_upload(filename=filename, data=data)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    store = get_loaded_index()
+    chunk_count = store.index.ntotal if store is not None and store.ready else 0
+    return KnowledgeUploadResponse(
+        source=KnowledgeSourceInfo(
+            source_id=source.source_id,
+            title=source.title,
+            path=source.path,
+            kind=source.kind,
+            bytes=source.bytes,
+            updated_at=source.updated_at,
+        ),
+        chunk_count=chunk_count,
+    )
+
+
+@router.delete("/v1/knowledge/{source_id}", status_code=204)
+def delete_knowledge(source_id: str) -> None:
+    try:
+        knowledge_uploads.delete_upload(source_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@router.post("/v1/knowledge/reindex", response_model=KnowledgeReindexResponse)
+def reindex_knowledge() -> KnowledgeReindexResponse:
+    try:
+        n = knowledge_uploads.reindex()
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return KnowledgeReindexResponse(chunk_count=n)

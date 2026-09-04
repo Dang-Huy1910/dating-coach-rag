@@ -100,3 +100,36 @@ class CoachReply(BaseModel):
 class ErrorResponse(BaseModel):
     detail: str
     code: ErrorCode | None = None
+
+
+class KnowledgeFormat(BaseModel):
+    ext: str
+    label: str
+    note: str
+
+
+class KnowledgeSourceInfo(BaseModel):
+    source_id: str
+    title: str
+    path: str
+    kind: str
+    bytes: int | None = None
+    updated_at: str | None = None
+
+
+class KnowledgeListResponse(BaseModel):
+    formats: list[KnowledgeFormat]
+    sources: list[KnowledgeSourceInfo]
+    index_ready: bool = False
+    chunk_count: int | None = None
+
+
+class KnowledgeUploadResponse(BaseModel):
+    source: KnowledgeSourceInfo
+    chunk_count: int
+    detail: str = "Đã thêm vào thư viện và dựng lại index."
+
+
+class KnowledgeReindexResponse(BaseModel):
+    chunk_count: int
+    detail: str = "Đã dựng lại index."

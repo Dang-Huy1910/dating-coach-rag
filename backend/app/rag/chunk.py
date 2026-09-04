@@ -87,3 +87,52 @@ def chunk_markdown(path: Path, source_id: str) -> list[Chunk]:
                 )
             )
     return chunks
+
+
+def chunk_plain(
+    text: str,
+    *,
+    source_id: str,
+    title: str,
+    rel_path: str,
+) -> list[Chunk]:
+    """Chunk non-markdown extracted text (PDF/DOCX/HTML/TXT/CSV)."""
+    body = (text or "").strip()
+    if not body:
+        return []
+    # Prefer blank-line paragraphs, then length split.
+    paragraphs = [p.strip() for p in re.split(r"\n\s*\n", body) if p.strip()]
+    if not paragraphs:
+        paragraphs = [body]
+    chunks: list[Chunk] = []
+    n = 0
+    for para in paragraphs:
+        for piece in _split_long(para):
+            if len(piece) < 40:
+                continue
+            n += 1
+            chunks.append(
+                Chunk(
+                    chunk_id=f"{source_id}#{n}",
+                    source_id=source_id,
+                    title=title,
+                    heading=None,
+                    text=piece,
+                    path=rel_path.replace("\\", "/"),
+                )
+            )
+    if not chunks:
+        # Short notes still useful — keep one chunk if at least ~20 chars.
+        cleaned = body[:TARGET_MAX].strip()
+        if len(cleaned) >= 20:
+            chunks.append(
+                Chunk(
+                    chunk_id=f"{source_id}#1",
+                    source_id=source_id,
+                    title=title,
+                    heading=None,
+                    text=cleaned,
+                    path=rel_path.replace("\\", "/"),
+                )
+            )
+    return chunks

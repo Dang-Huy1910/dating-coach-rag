@@ -53,6 +53,8 @@ DATING_COACH_EMBEDDER=hash python -m backend.app.eval.report
 # writes docs/EVAL.md — pass rate, safety refusals, Hit@4 / MRR
 ```
 
+User RAG uploads (UI **Thư viện**): `.md` `.txt` `.pdf` `.docx` `.html` `.csv` — stored under `data/uploads/`, then re-indexed with curated guides.
+
 See `docs/EVAL.md`, `specs/001-dating-coach-rag/quickstart.md`, `specs/003-public-profile-context/quickstart.md`, and `specs/004-coach-eval-report/`.
 
 ## Scope v1 (in)

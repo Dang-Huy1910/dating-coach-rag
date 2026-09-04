@@ -111,3 +111,39 @@ export interface KnowledgeReindexResponse {
   detail: string;
 }
 
+export interface PersonaProfile {
+  id: string;
+  name: string;
+  avatar: string;
+  tagline: string;
+  age: number;
+  archetype: 'introvert' | 'energetic' | 'cautious' | 'custom';
+  vibe_description: string;
+  messaging_style: string;
+  sample_opener_hint: string;
+}
+
+export interface SimulationMessage {
+  role: 'user' | 'target';
+  content: string;
+}
+
+export interface SimulationChatRequest {
+  persona: PersonaProfile;
+  messages: SimulationMessage[];
+}
+
+export interface SimulationCoachFeedback {
+  tone_evaluation: string;
+  vibe_score: 'positive' | 'neutral' | 'warning';
+  advice: string;
+  suggested_replies: string[];
+}
+
+export interface SimulationChatResponse {
+  target_reply: string;
+  coach_feedback: SimulationCoachFeedback;
+  citations: Citation[];
+}
+
+

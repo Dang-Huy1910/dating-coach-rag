@@ -133,3 +133,39 @@ class KnowledgeUploadResponse(BaseModel):
 class KnowledgeReindexResponse(BaseModel):
     chunk_count: int
     detail: str = "Đã dựng lại index."
+
+
+class PersonaProfile(BaseModel):
+    id: str
+    name: str
+    avatar: str
+    tagline: str
+    age: int
+    archetype: Literal["introvert", "energetic", "cautious", "custom"]
+    vibe_description: str
+    messaging_style: str
+    sample_opener_hint: str
+
+
+class SimulationMessage(BaseModel):
+    role: Literal["user", "target"]
+    content: str
+
+
+class SimulationChatRequest(BaseModel):
+    persona: PersonaProfile
+    messages: list[SimulationMessage] = Field(min_length=1, max_length=50)
+
+
+class SimulationCoachFeedback(BaseModel):
+    tone_evaluation: str
+    vibe_score: Literal["positive", "neutral", "warning"]
+    advice: str
+    suggested_replies: list[str] = Field(default_factory=list)
+
+
+class SimulationChatResponse(BaseModel):
+    target_reply: str
+    coach_feedback: SimulationCoachFeedback
+    citations: list[Citation] = Field(default_factory=list)
+

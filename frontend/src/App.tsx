@@ -13,6 +13,7 @@ import { MessageView } from './views/MessageView';
 import { OpenersView } from './views/OpenersView';
 import { ProfileContextView } from './views/ProfileContextView';
 import { KnowledgeView } from './views/KnowledgeView';
+import { ChatSimulationView } from './views/ChatSimulationView';
 
 const AppContent: React.FC = () => {
   const { sessionId } = useSession();
@@ -63,6 +64,9 @@ const AppContent: React.FC = () => {
         break;
       case 'library':
         view = <KnowledgeView onToast={showToast} />;
+        break;
+      case 'simulate':
+        view = <ChatSimulationView onToast={showToast} />;
         break;
       default:
         view = <WelcomeView onSelectMode={handleSelectMode} />;

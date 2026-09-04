@@ -11,6 +11,9 @@ import {
   KnowledgeUploadResponse,
   ProfileContextRequest,
   SessionResponse,
+  PersonaProfile,
+  SimulationChatRequest,
+  SimulationChatResponse,
 } from './types';
 
 // Empty string = same-origin via Vite proxy (/v1, /health → :8000). Avoids CORS-on-500 looking like "network error".
@@ -191,6 +194,17 @@ export const api = {
   reindexKnowledge: async (): Promise<KnowledgeReindexResponse> => {
     return request<KnowledgeReindexResponse>('/v1/knowledge/reindex', {
       method: 'POST',
+    });
+  },
+
+  getSimulationPersonas: async (): Promise<PersonaProfile[]> => {
+    return request<PersonaProfile[]>('/v1/simulation/personas');
+  },
+
+  sendSimulationChat: async (body: SimulationChatRequest): Promise<SimulationChatResponse> => {
+    return request<SimulationChatResponse>('/v1/simulation/chat', {
+      method: 'POST',
+      body: JSON.stringify(body),
     });
   },
 };

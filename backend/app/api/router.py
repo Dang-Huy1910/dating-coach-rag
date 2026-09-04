@@ -20,8 +20,11 @@ from backend.app.models import (
     KnowledgeSourceInfo,
     KnowledgeUploadResponse,
     OpenersRequest,
+    PersonaProfile,
     ProfileContextRequest,
     SessionResponse,
+    SimulationChatRequest,
+    SimulationChatResponse,
 )
 from backend.app.rag import uploads as knowledge_uploads
 from backend.app.rag.retrieve import get_loaded_index
@@ -327,3 +330,16 @@ def reindex_knowledge() -> KnowledgeReindexResponse:
     except FileNotFoundError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     return KnowledgeReindexResponse(chunk_count=n)
+
+
+@router.get("/v1/simulation/personas", response_model=list[PersonaProfile])
+def list_simulation_personas() -> list[PersonaProfile]:
+    from backend.app.simulation import get_default_personas
+    return get_default_personas()
+
+
+@router.post("/v1/simulation/chat", response_model=SimulationChatResponse)
+def simulation_chat(body: SimulationChatRequest) -> SimulationChatResponse:
+    from backend.app.simulation import simulate_chat
+    return simulate_chat(body)
+

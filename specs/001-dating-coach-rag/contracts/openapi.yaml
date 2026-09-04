@@ -303,6 +303,24 @@ components:
           items:
             type: string
           description: Present when intent is openers and not fully refused
+        tone:
+          type: string
+          nullable: true
+          description: Short Vietnamese tone label when intent is analyze_message
+        clarity:
+          type: string
+          nullable: true
+          description: Short Vietnamese clarity label when intent is analyze_message
+        risk:
+          type: string
+          nullable: true
+          description: Interpersonal communication-risk label (not clinical) when intent is analyze_message
+        analysis_points:
+          type: array
+          nullable: true
+          items:
+            type: string
+          description: LLM evaluation bullets for rewrite_bio (2–4 short Vietnamese points)
     ErrorResponse:
       type: object
       required: [detail]

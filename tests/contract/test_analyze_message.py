@@ -1,7 +1,7 @@
 def test_analyze_message_contract(client, stub_hits, monkeypatch):
     monkeypatch.setattr(
         "backend.app.coach.complete",
-        lambda _prompt: '{"reply": "Giọng hơi gấp. Hãy hỏi thay vì đòi.", "improved_draft": "Cuối tuần này cà phê 30 phút được không?", "openers": null}',
+        lambda _prompt: '{"reply": "Giọng hơi gấp. Hãy hỏi thay vì đòi.", "improved_draft": "Cuối tuần này cà phê 30 phút được không?", "openers": null, "tone": "Hơi dồn ép", "clarity": "8/10 • Rõ ý", "risk": "Cao — dễ phòng thủ"}',
     )
     sid = client.post("/v1/sessions").json()["id"]
     response = client.post(

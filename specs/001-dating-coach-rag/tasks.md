@@ -239,9 +239,9 @@ Solo project: run sequentially P1→P2→P3→P4. Do not split `router.py` / `co
 
 **Purpose**: Replace Streamlit stopgap with a Vite + React UI that only calls the FastAPI contract. Design source: `docs/STITCH_PROMPT.md`. Implement notes: `docs/ANTIGRAVITY_FE.md`.
 
-- [ ] T050 Scaffold Vite + React in `frontend/` (or `frontend/web/`) with env `VITE_API_BASE=http://127.0.0.1:8000` per plan: React UI
-- [ ] T051 [P] Implement session + disclaimer + four intents (ask, rewrite-bio, analyze-message, openers) against `specs/001-dating-coach-rag/contracts/openapi.yaml` per FR-001–FR-008
-- [ ] T052 [P] Render citations, copy-ready `improved_draft` / `openers`, and refusal states with empty citations per FR-004, FR-009, Edge Cases
-- [ ] T053 Vietnamese UX copy, always-visible disclaimer, no direct LLM/FAISS from the browser per Constitution III–IV, FR-011, FR-013
-- [ ] T054 Remove or archive Streamlit `frontend/app.py` once React covers US1–US4 demo sitting per SC-007
+- [X] T050 Scaffold Vite + React in `frontend/` (or `frontend/web/`) with env `VITE_API_BASE=http://127.0.0.1:8000` per plan: React UI
+- [X] T051 [P] Implement session + disclaimer + four intents (ask, rewrite-bio, analyze-message, openers) against `specs/001-dating-coach-rag/contracts/openapi.yaml` per FR-001–FR-008
+- [X] T052 [P] Render citations, copy-ready `improved_draft` / `openers`, and refusal states with empty citations per FR-004, FR-009, Edge Cases
+- [X] T053 Vietnamese UX copy, always-visible disclaimer, no direct LLM/FAISS from the browser per Constitution III–IV, FR-011, FR-013
+- [X] T054 Remove or archive Streamlit `frontend/app.py` once React covers US1–US4 demo sitting per SC-007
 

@@ -2,6 +2,27 @@
 
 Use this after Stitch screens exist. Backend is already the system of record.
 
+## UI/UX Pro Max skill (đã cài trong repo)
+
+Đã chạy `uipro init` cho **Antigravity** (`.agents/skills/`) và **Gemini CLI** (`.gemini/skills/`).
+
+1. **Restart** Antigravity / Gemini session sau khi cài.
+2. Khi nhờ build FE, skill tự kích hoạt nếu bạn nói về UI/UX; hoặc nhắc rõ:
+
+```text
+Dùng skill ui-ux-pro-max. Stack: React + Vite + TypeScript.
+Làm theo docs/ANTIGRAVITY_FE.md và contracts OpenAPI.
+Đính kèm / tham chiếu màn Stitch. Không gọi LLM/FAISS từ browser.
+```
+
+3. (Tuỳ chọn) Sinh design system trước:
+
+```bash
+python3 .agents/skills/ui-ux-pro-max/scripts/search.py \
+  "AI dating communication coach chatbot editorial calm not swipe app" \
+  --design-system --persist -p "DatingCoachRAG" --stack react
+```
+
 ## Do not change
 
 - Python FastAPI in `backend/` (RAG, safety, LLM, sessions)

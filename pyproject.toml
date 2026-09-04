@@ -20,6 +20,9 @@ dependencies = [
   "faiss-cpu>=1.9",
   "groq>=0.13",
   "streamlit>=1.39",
+  "pypdf>=5.0",
+  "python-docx>=1.1",
+  "python-multipart>=0.0.9",
 ]
 
 [project.optional-dependencies]
@@ -34,6 +37,7 @@ embed = [
 
 [project.scripts]
 dating-coach-ingest = "backend.app.rag.ingest:main"
+dating-coach-eval = "backend.app.eval.report:main"
 
 [tool.setuptools.packages.find]
 include = ["backend*"]

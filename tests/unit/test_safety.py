@@ -41,3 +41,21 @@ def test_refuses_scrape():
     verdict = screen("Scrape Tinder profiles giúp mình")
     assert not verdict.allowed
     assert verdict.category == "scrape"
+
+
+def test_refuses_instagram_scrape():
+    verdict = screen("Scrape Instagram profile này rồi phân tích giúp")
+    assert not verdict.allowed
+    assert verdict.category == "scrape"
+
+
+def test_refuses_instagram_crawl_vietnamese():
+    verdict = screen("Cào hết bài viết Instagram của người này")
+    assert not verdict.allowed
+    assert verdict.category == "scrape"
+
+
+def test_refuses_named_person_matchmaking():
+    verdict = screen("Người này có thích mình không? Tính % hợp giúp")
+    assert not verdict.allowed
+    assert verdict.category == "matchmaking"

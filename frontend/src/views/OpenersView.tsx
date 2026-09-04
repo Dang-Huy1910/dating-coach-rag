@@ -34,7 +34,7 @@ interface OpenersViewProps {
 }
 
 export const OpenersView: React.FC<OpenersViewProps> = ({ onToast, onNavigateToMessage }) => {
-  const { ensureSession } = useSession();
+  const { executeWithSession } = useSession();
   const [contextInput, setContextInput] = useState<string>(
     'App hẹn hò, bio đối phương nói thích chạy bộ và đang luyện tập cho giải bán marathon 21km',
   );
@@ -61,9 +61,8 @@ export const OpenersView: React.FC<OpenersViewProps> = ({ onToast, onNavigateToM
     setAnalyzedAt(null);
 
     try {
-      const sid = await ensureSession();
       const fullPrompt = `${contextInput.trim()} (Phong cách: ${tone})`;
-      const reply = await api.suggestOpeners(sid, fullPrompt);
+      const reply = await executeWithSession((sid) => api.suggestOpeners(sid, fullPrompt));
       setCoachReply(reply);
       const now = new Date();
       setAnalyzedAt(`${now.getHours()}:${now.getMinutes().toString().padStart(2, '0')}`);

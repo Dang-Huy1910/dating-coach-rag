@@ -66,7 +66,7 @@ async function fileToProfileImage(shot: LocalShot): Promise<ProfileImage> {
 }
 
 export const ProfileContextView: React.FC<ProfileContextViewProps> = ({ onToast }) => {
-  const { ensureSession } = useSession();
+  const { executeWithSession } = useSession();
   const [handle, setHandle] = useState('');
   const [profileUrl, setProfileUrl] = useState('');
   const [visibleText, setVisibleText] = useState('');
@@ -181,16 +181,17 @@ export const ProfileContextView: React.FC<ProfileContextViewProps> = ({ onToast 
     setAnalyzedAt(null);
 
     try {
-      const sid = await ensureSession();
       const images = shots.length ? await Promise.all(shots.map(fileToProfileImage)) : [];
-      const reply = await api.coachFromProfileContext(sid, {
-        handle: handle.trim() || null,
-        profile_url: url || null,
-        visible_text: trimmedVisible,
-        relationship_progress: relationship.trim() || null,
-        question: question.trim() || null,
-        images,
-      });
+      const reply = await executeWithSession((sid) =>
+        api.coachFromProfileContext(sid, {
+          handle: handle.trim() || null,
+          profile_url: url || null,
+          visible_text: trimmedVisible,
+          relationship_progress: relationship.trim() || null,
+          question: question.trim() || null,
+          images,
+        })
+      );
       let replyData = reply;
       if (
         replyData.reply &&

@@ -68,8 +68,8 @@ export const ChatSimulationView: React.FC<ChatSimulationViewProps> = ({ onToast 
           setMessages([
             {
               role: 'target',
-              content: `Chào bạn! Mình là ${list[0].name}. ${list[0].sample_opener_hint ? `Gợi ý: bạn có thể thử ${list[0].sample_opener_hint.toLowerCase()}` : 'Rất vui được làm quen!'}`
-            }
+              content: `Chào bạn! Mình là ${list[0].name}. Rất vui được làm quen và trò chuyện cùng bạn!`,
+            },
           ]);
         }
       } catch (err: unknown) {
@@ -100,8 +100,8 @@ export const ChatSimulationView: React.FC<ChatSimulationViewProps> = ({ onToast 
     setMessages([
       {
         role: 'target',
-        content: `Chào bạn! Mình là ${p.name}. Rất vui được kết nối!`
-      }
+        content: `Chào bạn! Mình là ${p.name}. Rất vui được làm quen và trò chuyện cùng bạn!`,
+      },
     ]);
   };
 
@@ -111,8 +111,8 @@ export const ChatSimulationView: React.FC<ChatSimulationViewProps> = ({ onToast 
       setMessages([
         {
           role: 'target',
-          content: `Chào bạn! Mình là ${selectedPersona.name}. Rất vui được kết nối lại!`
-        }
+          content: `Chào bạn! Mình là ${selectedPersona.name}. Rất vui được kết nối lại cùng bạn!`,
+        },
       ]);
       setCoachFeedback(null);
       setErrorMsg(null);

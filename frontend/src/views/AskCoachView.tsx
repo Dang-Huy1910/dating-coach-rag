@@ -26,7 +26,7 @@ interface AskCoachViewProps {
 }
 
 export const AskCoachView: React.FC<AskCoachViewProps> = ({ initialPrompt, onToast }) => {
-  const { ensureSession, indexReady } = useSession();
+  const { executeWithSession, indexReady } = useSession();
   const [messages, setMessages] = useState<ChatTurn[]>([]);
   const [inputValue, setInputValue] = useState<string>(initialPrompt || '');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
@@ -66,8 +66,7 @@ export const AskCoachView: React.FC<AskCoachViewProps> = ({ initialPrompt, onToa
     setIsSubmitting(true);
 
     try {
-      const sid = await ensureSession();
-      const reply = await api.askCoach(sid, textToSend);
+      const reply = await executeWithSession((sid) => api.askCoach(sid, textToSend));
 
       const now = new Date();
       const timeString = `${now.getHours()}:${now.getMinutes().toString().padStart(2, '0')}`;
@@ -274,9 +273,18 @@ export const AskCoachView: React.FC<AskCoachViewProps> = ({ initialPrompt, onToa
 
       {/* Error display */}
       {errorMessage && (
-        <div className="mt-4 p-3 bg-passion-50 border border-passion-200 rounded-xl flex items-center gap-2 text-xs text-passion-800">
-          <AlertCircle className="w-4 h-4 flex-shrink-0 text-passion-600" />
-          <span>{errorMessage}</span>
+        <div className="mt-4 p-3 bg-passion-50 border border-passion-200 rounded-xl flex items-center justify-between gap-3 text-xs text-passion-800">
+          <div className="flex items-center gap-2 min-w-0">
+            <AlertCircle className="w-4 h-4 flex-shrink-0 text-passion-600" />
+            <span>{errorMessage}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => handleSend(inputValue)}
+            className="text-magenta-700 font-semibold underline hover:text-magenta-900 shrink-0 cursor-pointer"
+          >
+            Thử lại
+          </button>
         </div>
       )}
 

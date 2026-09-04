@@ -72,7 +72,7 @@ function MetricCard({
 }
 
 export const MessageView: React.FC<MessageViewProps> = ({ onToast }) => {
-  const { ensureSession } = useSession();
+  const { executeWithSession } = useSession();
   const [draft, setDraft] = useState<string>(
     'Hey, mình thấy profile bạn khá thú vị. Bạn có muốn đi uống cà phê cuối tuần này không?',
   );
@@ -109,8 +109,9 @@ export const MessageView: React.FC<MessageViewProps> = ({ onToast }) => {
     setAnalyzedAt(null);
 
     try {
-      const sid = await ensureSession();
-      const reply = await api.analyzeMessage(sid, draft.trim(), notes.trim() || undefined);
+      const reply = await executeWithSession((sid) =>
+        api.analyzeMessage(sid, draft.trim(), notes.trim() || undefined)
+      );
       setCoachReply(reply);
       const now = new Date();
       setAnalyzedAt(

@@ -33,7 +33,7 @@ function pointIcon(index: number, text: string) {
 }
 
 export const BioStudioView: React.FC<BioStudioViewProps> = ({ onToast }) => {
-  const { ensureSession } = useSession();
+  const { executeWithSession } = useSession();
   const [draft, setDraft] = useState<string>(
     'Yêu cuộc sống. Thích du lịch, cà phê và nói chuyện sâu sắc. Tìm người cùng tần số.',
   );
@@ -62,8 +62,7 @@ export const BioStudioView: React.FC<BioStudioViewProps> = ({ onToast }) => {
     setAnalyzedAt(null);
 
     try {
-      const sid = await ensureSession();
-      const reply = await api.rewriteBio(sid, draft.trim());
+      const reply = await executeWithSession((sid) => api.rewriteBio(sid, draft.trim()));
       setCoachReply(reply);
       const now = new Date();
       setAnalyzedAt(`${now.getHours()}:${now.getMinutes().toString().padStart(2, '0')}`);

@@ -10,7 +10,9 @@ interface SessionContextType {
   isBackendConnected: boolean;
   isLoading: boolean;
   error: string | null;
-  ensureSession: () => Promise<string>;
+  ensureSession: (forceNew?: boolean) => Promise<string>;
+  createNewSession: () => Promise<SessionResponse>;
+  executeWithSession: <T>(operation: (sessionId: string) => Promise<T>) => Promise<T>;
   resetSession: () => Promise<void>;
   checkHealth: () => Promise<void>;
   clearError: () => void;
@@ -70,13 +72,31 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   }, []);
 
-  const ensureSession = useCallback(async (): Promise<string> => {
-    if (session?.id) {
+  const ensureSession = useCallback(async (forceNew = false): Promise<string> => {
+    if (!forceNew && session?.id) {
       return session.id;
     }
     const newSession = await createNewSession();
     return newSession.id;
   }, [session, createNewSession]);
+
+  const executeWithSession = useCallback(
+    async <T,>(operation: (sessionId: string) => Promise<T>): Promise<T> => {
+      let sid = await ensureSession();
+      try {
+        return await operation(sid);
+      } catch (err: unknown) {
+        if (err instanceof ApiError && err.status === 404) {
+          // In-memory session expired on backend (e.g. Render restart or inactivity)
+          // Provision a fresh session and retry seamlessly
+          const fresh = await createNewSession();
+          return await operation(fresh.id);
+        }
+        throw err;
+      }
+    },
+    [ensureSession, createNewSession]
+  );
 
   const resetSession = useCallback(async () => {
     if (session?.id) {
@@ -112,6 +132,8 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
         isLoading,
         error,
         ensureSession,
+        createNewSession,
+        executeWithSession,
         resetSession,
         checkHealth,
         clearError,

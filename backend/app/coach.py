@@ -105,15 +105,13 @@ def _complete_gemini(
     import time
     import httpx
 
-    primary_model = (settings.gemini_model or "gemini-1.5-flash").strip()
+    primary_model = (settings.gemini_model or "gemini-2.5-flash").strip()
     candidate_models = [primary_model]
     for m in [
-        "gemini-1.5-flash",
-        "gemini-1.5-flash-latest",
-        "gemini-2.0-flash",
+        "gemini-2.5-flash",
         "gemini-flash-lite-latest",
-        "gemini-1.5-flash-8b",
-        "gemini-1.5-pro",
+        "gemini-2.5-pro",
+        "gemini-3.1-flash-lite",
     ]:
         if m not in candidate_models:
             candidate_models.append(m)

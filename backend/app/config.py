@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     groq_model: str = "llama-3.3-70b-versatile"
     llm_provider: str = "groq"
     gemini_api_key: str = ""
-    gemini_model: str = "gemini-flash-lite-latest"
+    gemini_model: str = "gemini-2.5-flash"
     retrieve_min_score: float = 0.35
     retrieve_top_k: int = 4
     knowledge_dir: Path = REPO_ROOT / "data" / "knowledge"

@@ -52,20 +52,27 @@ def _groq_user_content(prompt: str, images: list[ProfileImage] | None):
     return parts
 
 
-def _complete_groq(prompt: str, settings, images: list[ProfileImage] | None = None) -> str:
+def _complete_groq(
+    prompt: str,
+    settings,
+    images: list[ProfileImage] | None = None,
+    system_prompt: str | None = None,
+    temperature: float = 0.4,
+) -> str:
     if not settings.groq_api_key:
         raise LLMProviderError("GROQ_API_KEY is missing", status_code=500)
     from groq import Groq
 
+    sys_content = system_prompt or SYSTEM_PROMPT
     try:
         client = Groq(api_key=settings.groq_api_key)
         response = client.chat.completions.create(
             model=settings.groq_model,
             messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "system", "content": sys_content},
                 {"role": "user", "content": _groq_user_content(prompt, images)},
             ],
-            temperature=0.4,
+            temperature=temperature,
         )
     except LLMProviderError:
         raise
@@ -75,7 +82,11 @@ def _complete_groq(prompt: str, settings, images: list[ProfileImage] | None = No
 
 
 def _complete_gemini(
-    prompt: str, settings, images: list[ProfileImage] | None = None
+    prompt: str,
+    settings,
+    images: list[ProfileImage] | None = None,
+    system_prompt: str | None = None,
+    temperature: float = 0.4,
 ) -> str:
     if not settings.gemini_api_key:
         raise LLMProviderError("GEMINI_API_KEY is missing", status_code=500)
@@ -91,10 +102,11 @@ def _complete_gemini(
         parts.append(
             {"inline_data": {"mime_type": image.mime_type, "data": image.data_base64}}
         )
+    sys_content = system_prompt or SYSTEM_PROMPT
     payload = {
-        "system_instruction": {"parts": [{"text": SYSTEM_PROMPT}]},
+        "system_instruction": {"parts": [{"text": sys_content}]},
         "contents": [{"role": "user", "parts": parts}],
-        "generationConfig": {"temperature": 0.4},
+        "generationConfig": {"temperature": temperature},
     }
     with httpx.Client(timeout=60.0) as client:
         response = client.post(
@@ -124,17 +136,28 @@ def _complete_gemini(
         ) from exc
 
 
-def complete(prompt: str, images: list[ProfileImage] | None = None) -> str:
+def complete(
+    prompt: str,
+    images: list[ProfileImage] | None = None,
+    system_prompt: str | None = None,
+    temperature: float = 0.4,
+) -> str:
     settings = get_settings()
     provider = _provider(settings)
     # Screenshots need a vision-capable model. Gemini Flash is in-stack; Groq's
     # default text model is not. Prefer Gemini whenever images + key exist.
     if images and settings.gemini_api_key:
-        return _complete_gemini(prompt, settings, images=images)
+        return _complete_gemini(
+            prompt, settings, images=images, system_prompt=system_prompt, temperature=temperature
+        )
     if provider == "groq":
-        return _complete_groq(prompt, settings, images=images)
+        return _complete_groq(
+            prompt, settings, images=images, system_prompt=system_prompt, temperature=temperature
+        )
     if provider in {"gemini", "google"}:
-        return _complete_gemini(prompt, settings, images=images)
+        return _complete_gemini(
+            prompt, settings, images=images, system_prompt=system_prompt, temperature=temperature
+        )
     raise RuntimeError(f"Unsupported LLM_PROVIDER={settings.llm_provider}")
 
 

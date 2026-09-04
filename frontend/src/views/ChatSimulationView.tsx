@@ -196,8 +196,8 @@ export const ChatSimulationView: React.FC<ChatSimulationViewProps> = ({ onToast 
     <ModePage width="wide">
       <ModeHeader
         eyebrow="Phòng luyện tập hội thoại"
-        title="Luyện nhắn tin hẹn hò (Chat Simulator)"
-        description="Thực hành trò chuyện với các hình mẫu đối tượng giả lập. Nhận phản hồi thời gian thực từ Dating Coach về nhịp độ, giọng điệu và gợi ý nước đi tiếp theo."
+        title="Luyện nhắn tin tán tỉnh & Trò chuyện"
+        description="Thực hành trò chuyện làm quen, tìm hiểu và tán tỉnh thường ngày (qua tin nhắn thường, mạng xã hội hay quen biết ngoài đời). Nhận phản hồi thời gian thực từ Dating Coach về nhịp độ, độ duyên dáng và nước đi tiếp theo."
         aside={
           <button
             type="button"
@@ -471,7 +471,7 @@ export const ChatSimulationView: React.FC<ChatSimulationViewProps> = ({ onToast 
             <div className="bg-paper-card rounded-2xl p-4 border border-paper-border text-xs space-y-1.5">
               <div className="flex items-center gap-1.5 font-bold text-charcoal">
                 <Sparkles className="w-3.5 h-3.5 text-magenta-600" />
-                <span>Gợi ý gu bắt chuyện của {selectedPersona.name}:</span>
+                <span>Chủ đề gợi ý bắt chuyện cùng {selectedPersona.name}:</span>
               </div>
               <p className="text-[11px] text-charcoal-muted leading-relaxed">
                 {selectedPersona.sample_opener_hint}
@@ -500,7 +500,7 @@ export const ChatSimulationView: React.FC<ChatSimulationViewProps> = ({ onToast 
               </button>
             </div>
             <p className="text-xs text-charcoal-muted">
-              Nhập tính cách hoặc đối tượng bạn đang chuẩn bị nhắn tin ngoài đời thực để tập dượt trước.
+              Nhập tính cách hoặc đối tượng bạn đang nhắn tin tìm hiểu, tán tỉnh thường ngày để tập dượt trước.
             </p>
 
             <form onSubmit={handleCreateCustomPersona} className="space-y-3.5">

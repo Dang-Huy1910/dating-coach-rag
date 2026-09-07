@@ -19,6 +19,10 @@ data/index/*
 !data/index/.gitkeep
 data/uploads/*
 !data/uploads/.gitkeep
+data/pipeline/*
+!data/pipeline/.gitkeep
+reports/ingest-report.json
+reports/ingest-report.md
 *.faiss
 *.pkl
 *.bin

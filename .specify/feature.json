@@ -1,1 +1,3 @@
-{"feature_directory": "specs/004-coach-eval-report"}
+{
+  "feature_directory": "specs/006-luigi-batch-ingest"
+}

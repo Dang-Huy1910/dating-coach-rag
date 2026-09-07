@@ -17,8 +17,31 @@ pip install -e ".[dev]"
 # Optional semantic embeddings (downloads MiniLM): pip install -e ".[embed]"
 cp .env.example .env   # set GROQ_API_KEY; optional YOUTUBE_API_KEY for public YouTube fetch
 DATING_COACH_EMBEDDER=hash python -m backend.app.rag.ingest
+# one-shot path (still supported): dating-coach-ingest
 # or DATING_COACH_EMBEDDER=minilm after installing .[embed]
 ```
+
+### Batch ingest (Luigi)
+
+Dependent batch jobs (Phase A): discover sources → chunk → build FAISS index → write report.
+Uses Luigi `--local-scheduler` only (no central planner). Phase B (SQL analytics / warehouse) is **not** in this slice.
+
+```bash
+DATING_COACH_EMBEDDER=hash dating-coach-batch
+# or: DATING_COACH_EMBEDDER=hash python -m backend.pipelines.ingest
+# full rebuild (clears data/pipeline/ + reports/ingest-report.json, not curated knowledge):
+DATING_COACH_EMBEDDER=hash dating-coach-batch --force
+```
+
+Artifacts:
+
+- `data/pipeline/extract/manifest.json`
+- `data/pipeline/chunks/chunks.jsonl` (+ `skipped.json`)
+- `data/pipeline/index/complete.json` (Luigi marker)
+- `data/index/index.faiss` + `meta.json` (same index the coaching API uses)
+- `reports/ingest-report.json`
+
+One-shot ingest remains available via `dating-coach-ingest` / `python -m backend.app.rag.ingest`.
 
 API (system of record):
 

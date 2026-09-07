@@ -8,8 +8,24 @@ from fastapi.testclient import TestClient
 
 os.environ.setdefault("DATING_COACH_EMBEDDER", "hash")
 os.environ.setdefault("GROQ_API_KEY", "test-key")
+# Keep pytest off the developer's real event lake (emit ON in app by default).
+os.environ.setdefault("DATING_COACH_EMIT_EVENTS", "false")
 
 REPO = Path(__file__).resolve().parents[1]
+
+
+@pytest.fixture(autouse=True)
+def _analytics_tmp_lake(tmp_path_factory, monkeypatch):
+    """Point lake/warehouse/analytics dirs at a temp tree for every test."""
+    root = tmp_path_factory.mktemp("analytics-dirs")
+    monkeypatch.setenv("LAKE_DIR", str(root / "lake"))
+    monkeypatch.setenv("WAREHOUSE_DIR", str(root / "warehouse"))
+    monkeypatch.setenv("ANALYTICS_DIR", str(root / "reports" / "analytics"))
+    from backend.app.config import get_settings
+
+    get_settings.cache_clear()
+    yield
+    get_settings.cache_clear()
 
 
 @pytest.fixture

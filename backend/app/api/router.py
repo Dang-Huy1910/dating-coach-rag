@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import time
 from uuid import UUID
 
 from fastapi import APIRouter, File, HTTPException, Request, UploadFile
 from fastapi.responses import JSONResponse
 from sse_starlette.sse import EventSourceResponse
 
+from backend.analytics.emit import emit_usage_event
 from backend.app.coach import IndexNotReadyError, LLMProviderError, handle
 from backend.app.config import DISCLAIMER_TEXT
 from backend.app.models import (
@@ -26,12 +28,11 @@ from backend.app.models import (
     SimulationChatRequest,
     SimulationChatResponse,
 )
-from backend.app.rag import uploads as knowledge_uploads
-from backend.app.rag.retrieve import get_loaded_index
 from backend.app.profile_gate import classify, has_visible_context, validate_images
 from backend.app.prompts import PROFILE_CONTEXT_EXTRA
 from backend.app.public_fetch import fetch_public_profile, merge_fetched_text
-from backend.app.rag.retrieve import index_ready
+from backend.app.rag import uploads as knowledge_uploads
+from backend.app.rag.retrieve import get_loaded_index, index_ready
 from backend.app.session_store import SessionStore
 
 HANDLE_MAX = 128
@@ -139,6 +140,18 @@ def _profile_too_long(body: ProfileContextRequest) -> bool:
     )
 
 
+def _emit_reply(session_id: str, intent, reply: CoachReply, started: float) -> None:
+    latency_ms = int((time.perf_counter() - started) * 1000)
+    emit_usage_event(
+        intent=str(intent),
+        refused=bool(reply.refused),
+        hedged=bool(reply.hedged),
+        citation_count=len(reply.citations or []),
+        latency_ms=latency_ms,
+        session_id=session_id,
+    )
+
+
 def _run(
     request: Request,
     session_id: str,
@@ -148,8 +161,9 @@ def _run(
     profile_request: ProfileContextRequest | None = None,
 ) -> CoachReply:
     _session_or_404(request, session_id)
+    started = time.perf_counter()
     try:
-        return handle(
+        reply = handle(
             store=_store(request),
             session_id=session_id,
             intent=intent,
@@ -166,6 +180,8 @@ def _run(
         raise HTTPException(status_code=exc.status_code, detail=str(exc)) from exc
     except RuntimeError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
+    _emit_reply(session_id, intent, reply, started)
+    return reply
 
 
 @router.post("/v1/sessions/{session_id}/ask", response_model=CoachReply)
@@ -178,12 +194,14 @@ def ask(session_id: UUID, body: AskRequest, request: Request):
             raise HTTPException(status_code=400, detail="Thư viện kiến thức chưa sẵn sàng.")
 
         def events():
+            started = time.perf_counter()
             reply = handle(
                 store=_store(request),
                 session_id=sid,
                 intent="ask",
                 user_text=text,
             )
+            _emit_reply(sid, "ask", reply, started)
             for citation in reply.citations:
                 yield {
                     "event": "citation",

@@ -24,6 +24,7 @@ dependencies = [
   "python-docx>=1.1",
   "python-multipart>=0.0.9",
   "luigi>=3.5",
+  "duckdb>=1.1",
 ]
 
 [project.optional-dependencies]
@@ -39,6 +40,7 @@ embed = [
 [project.scripts]
 dating-coach-ingest = "backend.app.rag.ingest:main"
 dating-coach-batch = "backend.pipelines.ingest:main"
+dating-coach-analytics = "backend.pipelines.analytics:main"
 dating-coach-eval = "backend.app.eval.report:main"
 
 [tool.setuptools.packages.find]

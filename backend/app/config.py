@@ -27,8 +27,12 @@ class Settings(BaseSettings):
     index_dir: Path = REPO_ROOT / "data" / "index"
     pipeline_dir: Path = REPO_ROOT / "data" / "pipeline"
     ingest_report_path: Path = REPO_ROOT / "reports" / "ingest-report.json"
+    lake_dir: Path = REPO_ROOT / "data" / "lake"
+    warehouse_dir: Path = REPO_ROOT / "data" / "warehouse"
+    analytics_dir: Path = REPO_ROOT / "reports" / "analytics"
     dating_coach_embedder: str = Field(default="minilm")
     dating_coach_api: str = "http://127.0.0.1:8000"
+    dating_coach_emit_events: bool = True
     youtube_api_key: str = ""
 
     @property

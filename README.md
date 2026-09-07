@@ -24,7 +24,7 @@ DATING_COACH_EMBEDDER=hash python -m backend.app.rag.ingest
 ### Batch ingest (Luigi)
 
 Dependent batch jobs (Phase A): discover sources → chunk → build FAISS index → write report.
-Uses Luigi `--local-scheduler` only (no central planner). Phase B (SQL analytics / warehouse) is **not** in this slice.
+Uses Luigi `--local-scheduler` only (no central planner).
 
 ```bash
 DATING_COACH_EMBEDDER=hash dating-coach-batch
@@ -42,6 +42,26 @@ Artifacts:
 - `reports/ingest-report.json`
 
 One-shot ingest remains available via `dating-coach-ingest` / `python -m backend.app.rag.ingest`.
+
+### Usage analytics (Luigi + SQL)
+
+Phase B — local-only demo (not a server deploy). Second Luigi DAG: Hive-style daily intent mart → Presto-style explore → CSV. DuckDB runs the SQL files under `sql/` (Treasure Data Hive/Presto analog on a laptop).
+
+```bash
+dating-coach-analytics --seed          # write demo lake partitions, exit 0
+dating-coach-analytics                 # HiveDailyMetrics → PrestoExplore → ExportCsv
+dating-coach-analytics --force         # rebuild SQL/export; keeps the event lake
+# or: python -m backend.pipelines.analytics …
+```
+
+Artifacts:
+
+- `data/lake/events/dt=YYYY-MM-DD/events.jsonl` (bronze; metrics only — no user text)
+- `data/warehouse/mart_daily_intent.parquet`
+- `data/pipeline/analytics/hive_complete.json` / `presto_result.json` (Luigi markers)
+- `reports/analytics/presto_explore.csv` (+ optional `metrics-report.json`)
+
+Phase A vs B: `dating-coach-batch` = knowledge ingest; `dating-coach-analytics` = usage SQL. Not Treasure Data production.
 
 API (system of record):
 

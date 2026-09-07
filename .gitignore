@@ -21,6 +21,12 @@ data/uploads/*
 !data/uploads/.gitkeep
 data/pipeline/*
 !data/pipeline/.gitkeep
+data/lake/**
+!data/lake/.gitkeep
+data/warehouse/**
+!data/warehouse/.gitkeep
+reports/analytics/**
+!reports/analytics/.gitkeep
 reports/ingest-report.json
 reports/ingest-report.md
 *.faiss

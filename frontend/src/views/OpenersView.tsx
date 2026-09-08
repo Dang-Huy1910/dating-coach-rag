@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useSession } from '../context/SessionContext';
-import { useI18n } from '../i18n/LocaleContext';
+import { isCatalogSample, useI18n } from '../i18n/LocaleContext';
 import { api, ApiError } from '../api/client';
 import { Citation, CoachReply } from '../api/types';
 import { AiStatusBadge } from '../components/AiStatusBadge';
@@ -36,10 +36,8 @@ interface OpenersViewProps {
 
 export const OpenersView: React.FC<OpenersViewProps> = ({ onToast, onNavigateToMessage }) => {
   const { executeWithSession, kit, refreshKit } = useSession();
-  const { t } = useI18n();
-  const [contextInput, setContextInput] = useState<string>(
-    'App hẹn hò, bio đối phương nói thích chạy bộ và đang luyện tập cho giải bán marathon 21km',
-  );
+  const { locale, t } = useI18n();
+  const [contextInput, setContextInput] = useState<string>(() => t('openers.sample'));
   const [tone, setTone] = useState<string>('warm');
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [coachReply, setCoachReply] = useState<CoachReply | null>(null);
@@ -61,7 +59,7 @@ export const OpenersView: React.FC<OpenersViewProps> = ({ onToast, onNavigateToM
     }
     setHydratedKey(key);
     setCoachReply({
-      reply: 'Đã điền từ phiên coach — bạn có thể gen lại nếu muốn.',
+      reply: t('openers.kitFill'),
       citations: [],
       refused: false,
       hedged: false,
@@ -71,14 +69,20 @@ export const OpenersView: React.FC<OpenersViewProps> = ({ onToast, onNavigateToM
     });
     setFromKit(true);
     setAnalyzedAt(null);
-  }, [kit, hydratedKey]);
+  }, [kit, hydratedKey, t]);
+
+  useEffect(() => {
+    if (!fromKit && isCatalogSample('openers.sample', contextInput)) {
+      setContextInput(t('openers.sample'));
+    }
+  }, [locale, t]);
 
   const aiOpeners = coachReply?.openers?.filter(Boolean) ?? [];
   const hasAiOpeners = aiOpeners.length > 0;
 
   const handleGenerate = async () => {
     if (!contextInput.trim()) {
-      setErrorMsg('Vui lòng nhập bối cảnh hoặc chi tiết profile đối phương.');
+      setErrorMsg(t('openers.needContext'));
       return;
     }
 
@@ -89,7 +93,7 @@ export const OpenersView: React.FC<OpenersViewProps> = ({ onToast, onNavigateToM
     setFromKit(false);
 
     try {
-      const fullPrompt = `${contextInput.trim()} (Phong cách: ${tone})`;
+      const fullPrompt = `${contextInput.trim()} (${t('openers.stylePrefix')}: ${tone})`;
       const reply = await executeWithSession(async (sid) => {
         const result = await api.suggestOpeners(sid, fullPrompt);
         await refreshKit(sid);
@@ -99,7 +103,7 @@ export const OpenersView: React.FC<OpenersViewProps> = ({ onToast, onNavigateToM
       const now = new Date();
       setAnalyzedAt(`${now.getHours()}:${now.getMinutes().toString().padStart(2, '0')}`);
     } catch (err: unknown) {
-      const msg = err instanceof ApiError ? err.detail : 'Không thể tạo gợi ý câu mở đầu.';
+      const msg = err instanceof ApiError ? err.detail : t('openers.fail');
       setErrorMsg(msg);
     } finally {
       setIsGenerating(false);
@@ -109,7 +113,7 @@ export const OpenersView: React.FC<OpenersViewProps> = ({ onToast, onNavigateToM
   const handleCopy = (text: string, index: number) => {
     navigator.clipboard.writeText(text).then(() => {
       setCopiedIndex(index);
-      onToast('Đã sao chép câu mở đầu!');
+      onToast(t('openers.copied'));
       setTimeout(() => setCopiedIndex(null), 2000);
     });
   };
@@ -130,9 +134,9 @@ export const OpenersView: React.FC<OpenersViewProps> = ({ onToast, onNavigateToM
               className={modeLabelClass}
             >
               <MessageCircle className="w-4 h-4 text-magenta-600" aria-hidden="true" />
-              <span>Ngữ cảnh hoặc thông tin từ profile</span>
+              <span>{t('openers.contextLabel')}</span>
             </label>
-            <span className="text-[11px] text-charcoal-muted font-mono">Chi tiết đối phương chia sẻ</span>
+            <span className="text-[11px] text-charcoal-muted font-mono">{t('openers.contextHint')}</span>
           </div>
 
           <textarea
@@ -145,21 +149,21 @@ export const OpenersView: React.FC<OpenersViewProps> = ({ onToast, onNavigateToM
               setAnalyzedAt(null);
               setFromKit(false);
             }}
-            placeholder="Ví dụ: App hẹn hò, ảnh chụp quán cà phê sách, bio thích leo núi..."
+            placeholder={t('openers.contextPh')}
             className="w-full bg-paper-subtle text-charcoal text-sm p-4 rounded-xl resize-none outline-none focus:bg-paper-card focus:ring-2 focus:ring-magenta-500/20 focus:border-magenta-500 transition-all border border-paper-border leading-relaxed"
           />
         </div>
 
         {fromKit && (
           <div className="text-xs text-magenta-800 bg-magenta-50 p-2.5 rounded-lg border border-magenta-200">
-            Đã điền từ phiên coach
+            {t('common.fromKit')}
           </div>
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
           <div className="space-y-1.5">
             <label htmlFor="opener-tone" className={modeLabelMutedClass}>
-              Phong cách tiếp cận
+              {t('openers.toneLabel')}
             </label>
             <div className="relative">
               <select
@@ -168,10 +172,10 @@ export const OpenersView: React.FC<OpenersViewProps> = ({ onToast, onNavigateToM
                 onChange={(e) => setTone(e.target.value)}
                 className="w-full appearance-none bg-paper-subtle text-charcoal text-xs sm:text-sm font-medium rounded-xl py-3 px-4 border border-paper-border outline-none cursor-pointer pr-10 hover:border-magenta-300 transition-all min-h-[44px]"
               >
-                <option value="warm">Thân thiện / Nhẹ nhàng</option>
-                <option value="playful">Hài hước nhẹ / Tò mò</option>
-                <option value="thoughtful">Đồng cảm sâu / Lắng nghe</option>
-                <option value="direct">Trực tiếp / Gọn gàng</option>
+                <option value="warm">{t('openers.toneWarm')}</option>
+                <option value="playful">{t('openers.tonePlayful')}</option>
+                <option value="thoughtful">{t('openers.toneThoughtful')}</option>
+                <option value="direct">{t('openers.toneDirect')}</option>
               </select>
               <ChevronDown className="w-4 h-4 text-charcoal-muted absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
@@ -188,7 +192,7 @@ export const OpenersView: React.FC<OpenersViewProps> = ({ onToast, onNavigateToM
               className={`w-4 h-4 ${isGenerating ? 'animate-spin' : ''}`}
               aria-hidden="true"
             />
-            <span>{isGenerating ? 'Đang gen opener…' : 'Gợi ý câu mở đầu'}</span>
+            <span>{isGenerating ? t('openers.working') : t('openers.cta')}</span>
           </button>
         </div>
 
@@ -205,15 +209,14 @@ export const OpenersView: React.FC<OpenersViewProps> = ({ onToast, onNavigateToM
         <div className="flex items-center gap-2.5 bg-passion-50/70 rounded-xl p-3 border border-passion-200/80 text-xs text-passion-900">
           <Info className="w-4 h-4 text-passion-600 flex-shrink-0" aria-hidden="true" />
           <p className="leading-relaxed">
-            <strong>Lưu ý:</strong> Coach không tìm hay xếp hạng người thật. Mọi phân tích nhằm rèn
-            luyện tư duy trò chuyện chân thành và tôn trọng ranh giới.
+            <strong>{t('openers.noteLead')}</strong> {t('openers.note')}
           </p>
         </div>
       </div>
 
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-2 flex-wrap text-xs text-charcoal-muted">
-          <span className="font-mono uppercase font-bold text-magenta-700">Cơ sở RAG:</span>
+          <span className="font-mono uppercase font-bold text-magenta-700">{t('common.rag')}:</span>
           {hasAiOpeners && coachReply?.citations && coachReply.citations.length > 0 ? (
             coachReply.citations.slice(0, 3).map((cite, idx) => (
               <button
@@ -230,40 +233,40 @@ export const OpenersView: React.FC<OpenersViewProps> = ({ onToast, onNavigateToM
             <>
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-paper-card border border-dashed border-paper-border text-charcoal-muted font-medium">
                 <Shield className="w-3.5 h-3.5" aria-hidden="true" />
-                Hiện sau khi AI gen
+                {t('ui.citeSoon')}
               </span>
             </>
           )}
         </div>
         <AiStatusBadge
           status={hasAiOpeners ? 'ready' : isGenerating ? 'loading' : 'idle'}
-          readyLabel="Opener từ AI"
+          readyLabel={t('openers.aiReady')}
         />
       </div>
 
       {coachReply?.refused ? (
         <SafetyBanner message={coachReply.reply} />
       ) : isGenerating ? (
-        <CoachBubbleLoading label="Đang gen opener từ ngữ cảnh…" />
+        <CoachBubbleLoading label={t('openers.loading')} />
       ) : hasAiOpeners ? (
         <div className="space-y-4">
           {coachReply?.reply?.trim() && (
             <CoachBubble
               reply={coachReply}
               timestamp={analyzedAt}
-              subtitle="Gợi ý opener từ ngữ cảnh"
+              subtitle={t('openers.bubbleSub')}
               onCitationClick={setActiveCitation}
               onCopyReply={(text) => {
-                navigator.clipboard.writeText(text).then(() => onToast('Đã sao chép nhận xét Coach!'));
+                navigator.clipboard.writeText(text).then(() => onToast(t('openers.copyReply')));
               }}
             />
           )}
 
           <div className="flex items-center justify-between">
             <h2 className="font-editorial text-2xl font-normal text-charcoal flex items-center gap-2">
-              <span>Gợi ý đã tối ưu</span>
+              <span>{t('openers.optimized')}</span>
               <span className="text-xs font-mono font-normal text-charcoal-muted">
-                ({aiOpeners.length} phương án AI)
+                ({t('ui.optionCount', { n: aiOpeners.length })})
               </span>
             </h2>
           </div>
@@ -281,11 +284,11 @@ export const OpenersView: React.FC<OpenersViewProps> = ({ onToast, onNavigateToM
                         0{idx + 1}
                       </span>
                       <span className="text-xs font-bold text-charcoal uppercase tracking-wider">
-                        Phương án 0{idx + 1}
+                        {t('ui.option', { n: idx + 1 })}
                       </span>
                     </div>
                     <span className="text-[11px] font-mono text-magenta-700 bg-magenta-50 px-2.5 py-0.5 rounded-full border border-magenta-200">
-                      Copy-ready
+                      {t('ui.copyReady')}
                     </span>
                   </div>
 
@@ -311,7 +314,7 @@ export const OpenersView: React.FC<OpenersViewProps> = ({ onToast, onNavigateToM
                     ) : (
                       <Copy className="w-3.5 h-3.5" aria-hidden="true" />
                     )}
-                    <span>{copiedIndex === idx ? 'Đã chép' : 'Sao chép'}</span>
+                    <span>{copiedIndex === idx ? t('ui.copiedShort') : t('ui.copy')}</span>
                   </button>
                 </div>
               </div>
@@ -320,9 +323,9 @@ export const OpenersView: React.FC<OpenersViewProps> = ({ onToast, onNavigateToM
         </div>
       ) : (
         <EmptyAiState
-          title="Chưa có opener từ AI"
-          description="Không còn mẫu cứng. Nhấn “Gợi ý câu mở đầu” để Coach AI tạo ít nhất 2 phương án từ ngữ cảnh bạn nhập."
-          hint="Bước tiếp theo → nút gợi ý câu mở đầu phía trên"
+          title={t('openers.emptyTitle')}
+          description={t('openers.emptyDesc')}
+          hint={t('openers.emptyHint')}
         />
       )}
 
@@ -333,11 +336,10 @@ export const OpenersView: React.FC<OpenersViewProps> = ({ onToast, onNavigateToM
           </div>
           <div className="space-y-1">
             <span className="text-xs font-bold uppercase tracking-wider text-charcoal">
-              Quy tắc vàng của Coach
+              {t('openers.ruleTitle')}
             </span>
             <p className="text-xs text-charcoal-muted leading-relaxed max-w-xl">
-              Nếu đối phương phản hồi ngắn gọn hoặc chưa nhiệt tình, hãy giữ sự thư thái. Đừng vội
-              gửi dồn dập tin nhắn thứ hai để chứng minh bản thân.
+              {t('openers.ruleBody')}
             </p>
           </div>
         </div>
@@ -348,7 +350,7 @@ export const OpenersView: React.FC<OpenersViewProps> = ({ onToast, onNavigateToM
             onClick={onNavigateToMessage}
             className="shrink-0 inline-flex items-center gap-1.5 min-h-[44px] text-xs font-bold text-magenta-700 hover:text-magenta-800 transition-colors cursor-pointer"
           >
-            <span>Xem mẹo duy trì nhịp trò chuyện</span>
+            <span>{t('openers.seePacing')}</span>
             <span>→</span>
           </button>
         )}

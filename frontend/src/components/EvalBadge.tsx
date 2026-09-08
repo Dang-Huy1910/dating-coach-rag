@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useI18n } from '../i18n/LocaleContext';
 
 interface EvalSummary {
   quality_pass?: string;
@@ -24,6 +25,7 @@ function pct(value: number | undefined): string {
 }
 
 export const EvalBadge: React.FC = () => {
+  const { t } = useI18n();
   const [summary, setSummary] = useState<EvalSummary>(FALLBACK);
 
   useEffect(() => {
@@ -51,7 +53,7 @@ export const EvalBadge: React.FC = () => {
       target="_blank"
       rel="noreferrer"
       className="inline-flex items-center gap-2 text-[11px] font-mono text-charcoal-muted/80 hover:text-magenta-700 transition-colors"
-      title="Báo cáo chất lượng coach (RAG eval) — mở báo cáo đầy đủ"
+      title={t('eval.title')}
     >
       <span className="inline-flex items-center gap-1.5 rounded-full border border-paper-border/80 bg-paper-subtle/60 px-2.5 py-1">
         <span className="w-1.5 h-1.5 rounded-full bg-magenta-500/70" aria-hidden="true" />

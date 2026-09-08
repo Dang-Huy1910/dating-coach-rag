@@ -18,6 +18,7 @@ import {
   SimulationChatRequest,
   SimulationChatResponse,
 } from './types';
+import { tStatic } from '../i18n/LocaleContext';
 
 // Empty string = same-origin via Vite proxy (/v1, /health → :8000). Avoids CORS-on-500 looking like "network error".
 const API_BASE = (import.meta.env.VITE_API_BASE ?? '').replace(/\/+$/, '');
@@ -39,20 +40,20 @@ class ApiError extends Error {
 function friendlyNetworkMessage(err: unknown): string {
   const raw = err instanceof Error ? err.message : '';
   if (/failed to fetch|networkerror|load failed|network request failed/i.test(raw)) {
-    return 'Lỗi mạng khi gọi API. Kiểm tra backend (cổng 8000) còn chạy không.';
+    return tStatic('error.network');
   }
-  return raw || 'Không thể kết nối đến máy chủ API.';
+  return raw || tStatic('error.connect');
 }
 
 function cleanErrorMessage(detail: string, status: number): string {
   if (status === 503 || /high demand|temporarily unavailable|503/i.test(detail)) {
-    return 'Máy chủ AI hiện đang có lượng truy cập cao đột biến. Bạn hãy bấm "Thử lại" sau ít giây nhé.';
+    return tStatic('error.highDemand');
   }
   if (status === 429 || /quota|rate limit|429/i.test(detail)) {
-    return 'Hệ thống đang tạm thời chạm giới hạn lượt gửi trong phút. Bạn hãy đợi khoảng 1 phút rồi thử lại nhé.';
+    return tStatic('error.rateLimit');
   }
   if (status === 403 || status === 401 || /api key|unauthorized|permission_denied/i.test(detail)) {
-    return 'Khóa API (API Key) không hợp lệ hoặc đã hết hạn mức. Vui lòng kiểm tra lại cấu hình trên hệ thống.';
+    return tStatic('error.apiKey');
   }
   // If the backend sent a raw JSON error string, extract friendly message
   if (detail.includes('{"error":') || detail.includes('{ "error":')) {
@@ -63,9 +64,9 @@ function cleanErrorMessage(detail: string, status: number): string {
         if (parsed.error?.message) {
           const msg = parsed.error.message;
           if (/high demand/i.test(msg)) {
-            return 'Máy chủ AI hiện đang quá tải lượng truy cập đột biến. Bạn hãy bấm "Thử lại" sau ít giây nhé.';
+            return tStatic('error.highDemand');
           }
-          return `Dịch vụ AI thông báo: ${msg}`;
+          return tStatic('error.aiService', { msg });
         }
       }
     } catch {
@@ -91,7 +92,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     }
 
     if (!response.ok) {
-      let detail = `Yêu cầu thất bại (${response.status})`;
+      let detail = tStatic('error.requestFailed', { status: response.status });
       let code: string | undefined;
       try {
         const errorJson: ErrorResponse = await response.json();
@@ -213,7 +214,7 @@ export const api = {
     try {
       const response = await fetch(url, { method: 'POST', body: form });
       if (!response.ok) {
-        let detail = `Yêu cầu thất bại (${response.status})`;
+        let detail = tStatic('error.requestFailed', { status: response.status });
         try {
           const errorJson: ErrorResponse = await response.json();
           if (typeof errorJson.detail === 'string' && errorJson.detail) {

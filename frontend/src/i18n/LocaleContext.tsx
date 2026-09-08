@@ -1,17 +1,19 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { Locale, STRINGS } from './strings';
 
-const STORAGE_KEY = 'dating-coach-locale';
+export const STORAGE_KEY = 'dating-coach-locale';
+
+type Vars = Record<string, string | number>;
 
 type LocaleContextValue = {
   locale: Locale;
   setLocale: (next: Locale) => void;
-  t: (key: string, vars?: Record<string, string | number>) => string;
+  t: (key: string, vars?: Vars) => string;
 };
 
 const LocaleContext = createContext<LocaleContextValue | undefined>(undefined);
 
-function readStoredLocale(): Locale {
+export function readStoredLocale(): Locale {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw === 'en' || raw === 'vi') return raw;
@@ -19,6 +21,25 @@ function readStoredLocale(): Locale {
     /* ignore */
   }
   return 'vi';
+}
+
+export function translate(locale: Locale, key: string, vars?: Vars): string {
+  let text = STRINGS[locale][key] ?? STRINGS.vi[key] ?? key;
+  if (vars) {
+    for (const [name, value] of Object.entries(vars)) {
+      text = text.split(`{${name}}`).join(String(value));
+    }
+  }
+  return text;
+}
+
+/** For non-React code (API client, class components). Reads the stored locale. */
+export function tStatic(key: string, vars?: Vars): string {
+  return translate(readStoredLocale(), key, vars);
+}
+
+export function isCatalogSample(key: string, value: string): boolean {
+  return STRINGS.vi[key] === value || STRINGS.en[key] === value;
 }
 
 export const LocaleProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -37,18 +58,7 @@ export const LocaleProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   }, []);
 
-  const t = useCallback(
-    (key: string, vars?: Record<string, string | number>) => {
-      let text = STRINGS[locale][key] ?? STRINGS.vi[key] ?? key;
-      if (vars) {
-        for (const [name, value] of Object.entries(vars)) {
-          text = text.split(`{${name}}`).join(String(value));
-        }
-      }
-      return text;
-    },
-    [locale],
-  );
+  const t = useCallback((key: string, vars?: Vars) => translate(locale, key, vars), [locale]);
 
   const value = useMemo(() => ({ locale, setLocale, t }), [locale, setLocale, t]);
 

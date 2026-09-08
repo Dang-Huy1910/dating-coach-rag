@@ -213,16 +213,16 @@ export const ChatSimulationView: React.FC<ChatSimulationViewProps> = ({ onToast 
       />
 
       {/* 1. Chọn Đối tượng (Persona Selector) */}
-      <div className="space-y-3">
+      <div className="space-y-3.5">
         <div className="flex items-center justify-between">
-          <p className="text-xs font-bold uppercase tracking-wider text-charcoal flex items-center gap-1.5">
+          <p className="text-xs font-mono font-bold uppercase tracking-wider text-charcoal flex items-center gap-1.5">
             <UserCheck className="w-4 h-4 text-magenta-600" />
             <span>{t('simulate.pick')}</span>
           </p>
           <button
             type="button"
             onClick={() => setShowCustomModal(true)}
-            className="text-xs font-semibold text-magenta-600 hover:text-magenta-700 flex items-center gap-1 cursor-pointer"
+            className="text-xs font-semibold text-magenta-600 hover:text-magenta-700 flex items-center gap-1.5 px-3 py-1 rounded-full bg-magenta-50 border border-magenta-200 hover:border-magenta-300 transition-all cursor-pointer shadow-soft"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>{t('simulate.create')}</span>
@@ -237,31 +237,37 @@ export const ChatSimulationView: React.FC<ChatSimulationViewProps> = ({ onToast 
                 key={p.id}
                 type="button"
                 onClick={() => handleSelectPersona(p)}
-                className={`text-left p-4 rounded-2xl border transition-all cursor-pointer relative flex flex-col justify-between gap-2.5 ${
+                className={`text-left p-4 rounded-2xl border transition-all duration-300 cursor-pointer relative flex flex-col justify-between gap-3 ${
                   isSelected
-                    ? 'bg-magenta-50/70 border-magenta-500 shadow-md ring-1 ring-magenta-500/30'
-                    : 'bg-paper-card border-paper-border hover:border-magenta-200 hover:bg-paper-subtle/50 shadow-xs'
+                    ? 'bg-gradient-to-br from-magenta-50/90 via-white to-passion-50/50 border-magenta-500 shadow-card-elevated ring-2 ring-magenta-500/20'
+                    : 'bg-paper-card border-paper-border hover:border-magenta-200 hover:shadow-card-elevated hover:-translate-y-0.5 shadow-soft'
                 }`}
               >
                 <div className="flex items-start gap-3">
-                  <span className="text-2xl p-1.5 rounded-xl bg-paper-subtle border border-paper-border/60">
-                    {p.avatar}
-                  </span>
-                  <div className="min-w-0">
+                  <div className="relative shrink-0">
+                    <span className="text-2xl p-2 rounded-2xl bg-paper-subtle border border-paper-border/80 block shadow-soft">
+                      {p.avatar}
+                    </span>
+                    <span className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full bg-emerald-500 ring-2 ring-white" />
+                  </div>
+                  <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5">
                       <span className="font-bold text-sm text-charcoal">{p.name}</span>
-                      <span className="text-xs text-charcoal-muted font-mono">{t('ui.ageYears', { n: p.age })}</span>
+                      <span className="text-[11px] text-charcoal-muted font-mono bg-paper-subtle px-1.5 py-0.5 rounded border border-paper-border">
+                        {t('ui.ageYears', { n: p.age })}
+                      </span>
                     </div>
                     <p className="text-xs font-medium text-magenta-700 mt-0.5 truncate">{p.tagline}</p>
                   </div>
                 </div>
-                <p className="text-[11px] text-charcoal-soft line-clamp-2 leading-relaxed">
+                <p className="text-xs text-charcoal-muted line-clamp-2 leading-relaxed">
                   {p.vibe_description}
                 </p>
                 {isSelected && (
-                  <span className="absolute top-3 right-3 text-[10px] font-mono font-bold uppercase tracking-wider bg-magenta-600 text-white px-2 py-0.5 rounded-full">
-                    {t('simulate.chatting')}
-                  </span>
+                  <div className="flex items-center gap-1 text-[10px] font-mono font-bold uppercase tracking-wider text-magenta-700 bg-magenta-100/70 border border-magenta-200 px-2 py-0.5 rounded-full w-fit">
+                    <span className="w-1.5 h-1.5 rounded-full bg-neon-pink animate-pulse"></span>
+                    <span>{t('simulate.chatting')}</span>
+                  </div>
                 )}
               </button>
             );
@@ -272,24 +278,29 @@ export const ChatSimulationView: React.FC<ChatSimulationViewProps> = ({ onToast 
       {/* 2. Chat Simulation Arena */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Khung Chat Trực Quan (8 cols) */}
-        <div className="lg:col-span-8 flex flex-col rounded-3xl bg-paper-card border border-paper-border shadow-md overflow-hidden min-h-[580px]">
+        <div className="lg:col-span-8 flex flex-col rounded-3xl bg-paper-card border border-paper-border shadow-card-elevated overflow-hidden min-h-[580px]">
           {/* Header của Khung Chat */}
           {selectedPersona && (
-            <div className="px-5 py-4 bg-paper-subtle/80 border-b border-paper-border flex items-center justify-between">
+            <div className="px-5 py-4 bg-paper-subtle/80 backdrop-blur-md border-b border-paper-border flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <span className="text-2xl">{selectedPersona.avatar}</span>
+                <div className="relative">
+                  <span className="text-2xl p-1.5 rounded-xl bg-white border border-paper-border block shadow-soft">
+                    {selectedPersona.avatar}
+                  </span>
+                  <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white" />
+                </div>
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="font-bold text-sm text-charcoal">{selectedPersona.name}</span>
                     <span className="flex items-center gap-1 text-[11px] text-emerald-600 font-medium">
-                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                       {t('simulate.online')}
                     </span>
                   </div>
                   <p className="text-[11px] text-charcoal-muted line-clamp-1">{selectedPersona.tagline}</p>
                 </div>
               </div>
-              <span className="text-[11px] font-mono text-magenta-700 bg-magenta-50 px-2.5 py-1 rounded-full border border-magenta-200 hidden sm:inline-block">
+              <span className="text-[11px] font-mono text-magenta-700 bg-magenta-50 px-2.5 py-1 rounded-full border border-magenta-200 hidden sm:inline-block shadow-soft">
                 {t('simulate.simBadge')}
               </span>
             </div>
@@ -305,15 +316,15 @@ export const ChatSimulationView: React.FC<ChatSimulationViewProps> = ({ onToast 
                   className={`flex items-end gap-2.5 ${isUser ? 'justify-end' : 'justify-start'}`}
                 >
                   {!isUser && (
-                    <span className="w-8 h-8 rounded-full bg-paper-subtle border border-paper-border flex items-center justify-center text-sm shrink-0 mb-0.5">
+                    <span className="w-8 h-8 rounded-full bg-paper-subtle border border-paper-border flex items-center justify-center text-sm shrink-0 mb-0.5 shadow-soft">
                       {selectedPersona?.avatar || '👤'}
                     </span>
                   )}
                   <div
-                    className={`max-w-[82%] sm:max-w-[70%] px-4 py-3 rounded-2xl text-sm leading-relaxed ${
+                    className={`max-w-[82%] sm:max-w-[72%] px-4 py-3 rounded-2xl text-sm leading-relaxed transition-all ${
                       isUser
-                        ? 'bg-gradient-passion text-white rounded-br-none shadow-sm'
-                        : 'bg-paper-subtle text-charcoal rounded-bl-none border border-paper-border/80 shadow-xs'
+                        ? 'bg-gradient-passion text-white rounded-br-sm shadow-soft'
+                        : 'bg-paper-subtle text-charcoal rounded-bl-sm border border-paper-border/80 shadow-soft'
                     }`}
                   >
                     <p className="whitespace-pre-wrap">{m.content}</p>
@@ -324,10 +335,10 @@ export const ChatSimulationView: React.FC<ChatSimulationViewProps> = ({ onToast 
 
             {isSending && (
               <div className="flex items-end gap-2.5 justify-start">
-                <span className="w-8 h-8 rounded-full bg-paper-subtle border border-paper-border flex items-center justify-center text-sm shrink-0">
+                <span className="w-8 h-8 rounded-full bg-paper-subtle border border-paper-border flex items-center justify-center text-sm shrink-0 shadow-soft">
                   {selectedPersona?.avatar || '👤'}
                 </span>
-                <div className="bg-paper-subtle text-charcoal-muted px-4 py-2.5 rounded-2xl rounded-bl-none border border-paper-border/80 flex items-center gap-1.5 text-xs">
+                <div className="bg-paper-subtle text-charcoal-muted px-4 py-2.5 rounded-2xl rounded-bl-sm border border-paper-border/80 flex items-center gap-1.5 text-xs shadow-soft">
                   <span className="w-1.5 h-1.5 rounded-full bg-magenta-500 animate-bounce" />
                   <span className="w-1.5 h-1.5 rounded-full bg-magenta-500 animate-bounce [animation-delay:0.2s]" />
                   <span className="w-1.5 h-1.5 rounded-full bg-magenta-500 animate-bounce [animation-delay:0.4s]" />
@@ -349,7 +360,7 @@ export const ChatSimulationView: React.FC<ChatSimulationViewProps> = ({ onToast 
           {/* Input Bar */}
           <form
             onSubmit={handleSend}
-            className="p-3 bg-paper-subtle border-t border-paper-border flex items-center gap-2"
+            className="p-3 bg-paper-subtle/90 border-t border-paper-border flex items-center gap-2"
           >
             <input
               type="text"
@@ -357,12 +368,12 @@ export const ChatSimulationView: React.FC<ChatSimulationViewProps> = ({ onToast 
               onChange={(e) => setInputMessage(e.target.value)}
               placeholder={selectedPersona ? t('simulate.phNamed', { name: selectedPersona.name }) : t('simulate.ph')}
               disabled={isSending}
-              className="flex-1 bg-paper-card text-sm text-charcoal px-4 py-2.5 rounded-xl border border-paper-border outline-none focus:ring-2 focus:ring-magenta-500/30 focus:border-magenta-400 placeholder:text-charcoal-muted"
+              className="flex-1 bg-paper-card text-sm text-charcoal px-4 py-2.5 rounded-xl border border-paper-border outline-none focus:ring-2 focus:ring-magenta-500/20 focus:border-magenta-400 placeholder:text-charcoal-muted transition-all shadow-soft"
             />
             <button
               type="submit"
               disabled={!inputMessage.trim() || isSending}
-              className="min-h-[42px] px-4 rounded-xl bg-magenta-600 hover:bg-magenta-700 disabled:opacity-50 text-white font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+              className="min-h-[42px] px-4 rounded-xl bg-magenta-600 hover:bg-magenta-700 disabled:opacity-50 text-white font-semibold flex items-center justify-center gap-1.5 transition-all shadow-glow-magenta cursor-pointer active:scale-95"
             >
               <Send className="w-4 h-4" />
               <span className="hidden sm:inline text-xs">{t('simulate.send')}</span>
@@ -372,10 +383,10 @@ export const ChatSimulationView: React.FC<ChatSimulationViewProps> = ({ onToast 
 
         {/* Cột Cố Vấn Coach Thời Gian Thực (4 cols) */}
         <div className="lg:col-span-4 space-y-4">
-          <div className="bg-paper-card rounded-3xl p-5 border border-paper-border shadow-md space-y-4 relative overflow-hidden">
+          <div className="bg-paper-card rounded-3xl p-5 border border-paper-border shadow-card-elevated space-y-4 relative overflow-hidden">
             <div className="flex items-center justify-between pb-3 border-b border-paper-border">
               <div className="flex items-center gap-2 text-magenta-700">
-                <Sparkles className="w-4 h-4 text-magenta-600" />
+                <Sparkles className="w-4 h-4 text-magenta-600 animate-pulse" />
                 <h3 className="font-bold text-xs uppercase tracking-wider font-mono">
                   {t('simulate.coachTitle')}
                 </h3>
@@ -383,7 +394,7 @@ export const ChatSimulationView: React.FC<ChatSimulationViewProps> = ({ onToast 
               <button
                 type="button"
                 onClick={() => setIsCoachOpen(!isCoachOpen)}
-                className="text-charcoal-muted hover:text-charcoal p-1 rounded-lg"
+                className="text-charcoal-muted hover:text-charcoal p-1 rounded-lg transition-colors cursor-pointer"
                 title={isCoachOpen ? t('simulate.collapse') : t('simulate.expand')}
               >
                 {isCoachOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -397,25 +408,25 @@ export const ChatSimulationView: React.FC<ChatSimulationViewProps> = ({ onToast 
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold text-charcoal">{t('simulate.vibe')}</span>
                     {coachFeedback.vibe_score === 'positive' && (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold shadow-soft">
                         {t('simulate.vibePos')}
                       </span>
                     )}
                     {coachFeedback.vibe_score === 'neutral' && (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-xs font-bold">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-xs font-bold shadow-soft">
                         {t('simulate.vibeNeu')}
                       </span>
                     )}
                     {coachFeedback.vibe_score === 'warning' && (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-passion-50 text-passion-700 border border-passion-200 text-xs font-bold">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-passion-50 text-passion-700 border border-passion-200 text-xs font-bold shadow-soft">
                         {t('simulate.vibeWarn')}
                       </span>
                     )}
                   </div>
 
                   {/* Nhận xét giọng điệu */}
-                  <div className="space-y-1.5 bg-paper-subtle p-3 rounded-xl border border-paper-border/80">
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-charcoal-muted">
+                  <div className="space-y-1.5 bg-paper-subtle p-3.5 rounded-2xl border border-paper-border/80">
+                    <p className="text-[11px] font-mono font-bold uppercase tracking-wider text-charcoal-muted">
                       {t('simulate.toneEval')}
                     </p>
                     <p className="text-xs text-charcoal leading-relaxed">
@@ -424,8 +435,8 @@ export const ChatSimulationView: React.FC<ChatSimulationViewProps> = ({ onToast 
                   </div>
 
                   {/* Lời khuyên thiết thực */}
-                  <div className="space-y-1.5 bg-magenta-50/50 p-3 rounded-xl border border-magenta-200/80">
-                    <div className="flex items-center gap-1.5 text-magenta-800 text-[11px] font-bold uppercase tracking-wider">
+                  <div className="space-y-1.5 bg-gradient-to-r from-magenta-50/70 to-passion-50/40 p-3.5 rounded-2xl border border-magenta-200/80">
+                    <div className="flex items-center gap-1.5 text-magenta-800 text-[11px] font-mono font-bold uppercase tracking-wider">
                       <Lightbulb className="w-3.5 h-3.5 text-magenta-600" />
                       <span>{t('simulate.nextAdvice')}</span>
                     </div>
@@ -437,20 +448,27 @@ export const ChatSimulationView: React.FC<ChatSimulationViewProps> = ({ onToast 
                   {/* Gợi ý câu rep mẫu */}
                   {coachFeedback.suggested_replies && coachFeedback.suggested_replies.length > 0 && (
                     <div className="space-y-2">
-                      <p className="text-[11px] font-bold uppercase tracking-wider text-charcoal-muted">
+                      <p className="text-[11px] font-mono font-bold uppercase tracking-wider text-charcoal-muted">
                         {t('simulate.suggested')}
                       </p>
                       <div className="space-y-2">
                         {coachFeedback.suggested_replies.map((reply, idx) => (
-                          <button
+                          <div
                             key={idx}
-                            type="button"
-                            onClick={() => handleUseSuggestion(reply)}
-                            className="w-full text-left p-2.5 rounded-xl border border-paper-border bg-paper-card hover:bg-magenta-50 hover:border-magenta-300 text-xs text-charcoal transition-all group flex items-start justify-between gap-2 cursor-pointer shadow-xs"
+                            className="p-3 rounded-2xl border border-paper-border bg-paper-card hover:border-magenta-300 text-xs text-charcoal transition-all space-y-2 shadow-soft group"
                           >
-                            <span className="italic leading-relaxed">“{reply}”</span>
-                            <Copy className="w-3.5 h-3.5 text-magenta-400 group-hover:text-magenta-600 shrink-0 mt-0.5" />
-                          </button>
+                            <p className="font-editorial italic text-charcoal leading-relaxed">“{reply}”</p>
+                            <div className="flex items-center justify-end gap-2 pt-1 border-t border-paper-border/50">
+                              <button
+                                type="button"
+                                onClick={() => handleUseSuggestion(reply)}
+                                className="inline-flex items-center gap-1 text-[11px] font-semibold text-magenta-700 hover:text-magenta-800 bg-magenta-50 hover:bg-magenta-100 px-2.5 py-1 rounded-lg border border-magenta-200 transition-colors cursor-pointer"
+                              >
+                                <Send className="w-3 h-3" />
+                                <span>{t('simulate.pasted')}</span>
+                              </button>
+                            </div>
+                          </div>
                         ))}
                       </div>
                     </div>
@@ -458,10 +476,12 @@ export const ChatSimulationView: React.FC<ChatSimulationViewProps> = ({ onToast 
                 </div>
               )
             ) : (
-              <div className="py-8 text-center space-y-2">
-                <HeartHandshake className="w-8 h-8 text-charcoal-muted mx-auto opacity-50" />
-                <p className="text-xs font-semibold text-charcoal">{t('simulate.noAnalysis')}</p>
-                <p className="text-[11px] text-charcoal-muted leading-relaxed px-2">
+              <div className="py-8 text-center space-y-2.5">
+                <div className="w-12 h-12 rounded-2xl bg-paper-subtle border border-paper-border flex items-center justify-center mx-auto text-charcoal-muted">
+                  <HeartHandshake className="w-6 h-6 opacity-60" />
+                </div>
+                <p className="text-xs font-bold text-charcoal">{t('simulate.noAnalysis')}</p>
+                <p className="text-[11px] text-charcoal-muted leading-relaxed px-3">
                   {t('simulate.noAnalysisHint')}
                 </p>
               </div>
@@ -470,8 +490,8 @@ export const ChatSimulationView: React.FC<ChatSimulationViewProps> = ({ onToast 
 
           {/* Gợi ý mở lời ban đầu */}
           {selectedPersona?.sample_opener_hint && (
-            <div className="bg-paper-card rounded-2xl p-4 border border-paper-border text-xs space-y-1.5">
-              <div className="flex items-center gap-1.5 font-bold text-charcoal">
+            <div className="bg-paper-card rounded-2xl p-4 border border-paper-border text-xs space-y-1.5 shadow-soft">
+              <div className="flex items-center gap-1.5 font-bold text-charcoal font-mono">
                 <Sparkles className="w-3.5 h-3.5 text-magenta-600" />
                 <span>{t('simulate.topicWith', { name: selectedPersona.name })}</span>
               </div>

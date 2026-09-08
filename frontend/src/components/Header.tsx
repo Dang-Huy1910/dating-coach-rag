@@ -36,40 +36,63 @@ export const Header: React.FC<HeaderProps> = ({ currentMode, onModeChange, onRes
   ];
 
   return (
-    <header className="fixed top-0 left-0 w-full z-40 bg-paper/90 backdrop-blur-md border-b border-paper-border shadow-[0_1px_8px_rgba(0,0,0,0.03)]">
+    <header className="fixed top-0 left-0 w-full z-40 bg-paper/85 backdrop-blur-xl border-b border-paper-border/80 shadow-[0_2px_12px_rgba(24,24,27,0.03)] transition-all">
       <div className="h-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
         {/* Brand */}
         <button
           onClick={() => onModeChange('welcome')}
-          className="flex items-center gap-3 text-left group transition-all"
+          className="flex items-center gap-3.5 text-left group transition-all cursor-pointer focus:outline-none"
         >
-          <img
-            src="/logo.png"
-            alt="Dating Coach Logo"
-            className="w-10 h-10 rounded-xl object-contain shadow-sm border border-paper-border group-hover:scale-105 group-hover:shadow-glow-magenta transition-all"
-          />
+          <div className="relative">
+            <img
+              src="/logo.png"
+              alt="Dating Coach Logo"
+              className="w-10 h-10 rounded-2xl object-contain shadow-soft border border-paper-border/80 group-hover:scale-105 group-hover:shadow-glow-magenta transition-all duration-300"
+            />
+            <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white" title="Active"></span>
+          </div>
           <div>
             <div className="font-editorial text-2xl font-normal text-charcoal leading-none tracking-tight group-hover:text-magenta-700 transition-colors">
               Coach
             </div>
-            <div className="text-[11px] text-charcoal-muted tracking-wide font-medium mt-0.5 uppercase">
-              Dating Communication Lab
+            <div className="text-[10px] text-charcoal-muted tracking-widest font-mono font-medium mt-1 uppercase flex items-center gap-1">
+              <span>Dating Communication Lab</span>
             </div>
           </div>
         </button>
 
-        {/* Segmented Mode Control */}
-        <nav className="hidden md:flex items-center bg-paper-subtle p-1 rounded-full border border-paper-border shadow-xs">
+        {/* Segmented Mode Control - Desktop */}
+        <nav className="hidden lg:flex items-center bg-paper-subtle/80 p-1 rounded-full border border-paper-border/90 shadow-soft">
           {modes.map((mode) => {
             const isActive = currentMode === mode.id;
             return (
               <button
                 key={mode.id}
                 onClick={() => onModeChange(mode.id)}
-                className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 cursor-pointer ${
                   isActive
-                    ? 'bg-paper-card text-magenta-700 shadow-sm border border-paper-border/80'
-                    : 'text-charcoal-muted hover:text-charcoal hover:bg-paper/50'
+                    ? 'bg-paper-card text-magenta-700 shadow-sm border border-paper-border font-bold'
+                    : 'text-charcoal-muted hover:text-charcoal hover:bg-white/60'
+                }`}
+              >
+                {t(mode.labelKey)}
+              </button>
+            );
+          })}
+        </nav>
+
+        {/* Medium screens (Tablet / Small Laptop) */}
+        <nav className="hidden md:flex lg:hidden items-center bg-paper-subtle/80 p-1 rounded-full border border-paper-border/90 shadow-soft overflow-x-auto max-w-[460px]">
+          {modes.map((mode) => {
+            const isActive = currentMode === mode.id;
+            return (
+              <button
+                key={mode.id}
+                onClick={() => onModeChange(mode.id)}
+                className={`px-2.5 py-1 rounded-full text-[11px] font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer ${
+                  isActive
+                    ? 'bg-paper-card text-magenta-700 shadow-sm border border-paper-border font-bold'
+                    : 'text-charcoal-muted hover:text-charcoal hover:bg-white/60'
                 }`}
               >
                 {t(mode.labelKey)}
@@ -79,9 +102,9 @@ export const Header: React.FC<HeaderProps> = ({ currentMode, onModeChange, onRes
         </nav>
 
         {/* Actions & Session Privacy Pill */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5">
           <div
-            className="flex items-center p-0.5 rounded-full border border-paper-border bg-paper-subtle shadow-xs"
+            className="flex items-center p-0.5 rounded-full border border-paper-border/90 bg-paper-subtle shadow-soft"
             role="group"
             aria-label={t('header.langLabel')}
           >
@@ -111,7 +134,7 @@ export const Header: React.FC<HeaderProps> = ({ currentMode, onModeChange, onRes
             </button>
           </div>
 
-          <div className="hidden lg:flex items-center gap-1.5 text-xs text-charcoal-muted bg-paper-subtle px-3 py-1.5 rounded-full border border-paper-border font-mono">
+          <div className="hidden xl:flex items-center gap-1.5 text-xs text-charcoal-muted bg-paper-subtle/80 px-3 py-1.5 rounded-full border border-paper-border font-mono">
             <Lock className="w-3.5 h-3.5 text-magenta-600" />
             <span>{t('header.anonymous')}</span>
           </div>
@@ -119,7 +142,7 @@ export const Header: React.FC<HeaderProps> = ({ currentMode, onModeChange, onRes
           <button
             onClick={handleReset}
             disabled={isLoading}
-            className="p-2 rounded-xl text-charcoal-muted hover:text-charcoal hover:bg-paper-subtle border border-transparent hover:border-paper-border transition-all"
+            className="p-2 rounded-xl text-charcoal-muted hover:text-charcoal hover:bg-paper-subtle border border-transparent hover:border-paper-border transition-all cursor-pointer disabled:opacity-50"
             title={t('header.resetTitle')}
           >
             <RotateCcw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
@@ -128,17 +151,17 @@ export const Header: React.FC<HeaderProps> = ({ currentMode, onModeChange, onRes
       </div>
 
       {/* Mobile Mode Switcher Bar */}
-      <div className="md:hidden flex items-center overflow-x-auto px-4 py-2 bg-paper-subtle/70 border-t border-paper-border gap-1.5 scrollbar-none">
+      <div className="md:hidden flex items-center overflow-x-auto px-4 py-2.5 bg-paper/95 border-t border-paper-border/80 gap-1.5 scrollbar-none">
         {modes.map((mode) => {
           const isActive = currentMode === mode.id;
           return (
             <button
               key={mode.id}
               onClick={() => onModeChange(mode.id)}
-              className={`px-3 py-1 rounded-full text-xs whitespace-nowrap font-medium transition-all ${
+              className={`px-3 py-1.5 rounded-full text-xs whitespace-nowrap font-medium transition-all duration-200 cursor-pointer ${
                 isActive
-                  ? 'bg-magenta-600 text-white shadow-xs'
-                  : 'text-charcoal-muted hover:text-charcoal bg-paper-card border border-paper-border'
+                  ? 'bg-magenta-600 text-white font-semibold shadow-glow-magenta'
+                  : 'text-charcoal-muted hover:text-charcoal bg-paper-card border border-paper-border/80'
               }`}
             >
               {t(mode.labelKey)}

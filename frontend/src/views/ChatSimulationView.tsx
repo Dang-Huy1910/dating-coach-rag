@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { api, ApiError } from '../api/client';
-import { useI18n } from '../i18n/LocaleContext';
+import { tStatic, useI18n } from '../i18n/LocaleContext';
 import {
   PersonaProfile,
   SimulationCoachFeedback,
@@ -70,12 +70,12 @@ export const ChatSimulationView: React.FC<ChatSimulationViewProps> = ({ onToast 
           setMessages([
             {
               role: 'target',
-              content: `Chào bạn! Mình là ${list[0].name}. Rất vui được làm quen và trò chuyện cùng bạn!`,
+              content: tStatic('simulate.greeting', { name: list[0].name }),
             },
           ]);
         }
       } catch (err: unknown) {
-        setErrorMsg('Không thể tải danh sách hình mẫu giả lập.');
+        setErrorMsg(tStatic('simulate.failLoad'));
       }
     };
     void loadPersonas();
@@ -92,7 +92,7 @@ export const ChatSimulationView: React.FC<ChatSimulationViewProps> = ({ onToast 
   const handleSelectPersona = (p: PersonaProfile) => {
     if (selectedPersona?.id === p.id) return;
     if (messages.length > 1) {
-      if (!window.confirm(`Đổi sang trò chuyện với ${p.name}? Cuộc trò chuyện hiện tại sẽ được bắt đầu lại.`)) {
+      if (!window.confirm(t('simulate.switchConfirm', { name: p.name }))) {
         return;
       }
     }
@@ -102,23 +102,23 @@ export const ChatSimulationView: React.FC<ChatSimulationViewProps> = ({ onToast 
     setMessages([
       {
         role: 'target',
-        content: `Chào bạn! Mình là ${p.name}. Rất vui được làm quen và trò chuyện cùng bạn!`,
+        content: t('simulate.greeting', { name: p.name }),
       },
     ]);
   };
 
   const handleResetChat = () => {
     if (!selectedPersona) return;
-    if (window.confirm(`Làm mới đoạn chat với ${selectedPersona.name}?`)) {
+    if (window.confirm(t('simulate.resetConfirm', { name: selectedPersona.name }))) {
       setMessages([
         {
           role: 'target',
-          content: `Chào bạn! Mình là ${selectedPersona.name}. Rất vui được kết nối lại cùng bạn!`,
+          content: t('simulate.greetingAgain', { name: selectedPersona.name }),
         },
       ]);
       setCoachFeedback(null);
       setErrorMsg(null);
-      onToast('Đã làm mới cuộc hội thoại!');
+      onToast(t('simulate.resetToast'));
     }
   };
 
@@ -150,7 +150,7 @@ export const ChatSimulationView: React.FC<ChatSimulationViewProps> = ({ onToast 
       setCoachFeedback(res.coach_feedback);
       setIsCoachOpen(true);
     } catch (err: unknown) {
-      const msg = err instanceof ApiError ? err.detail : 'Gặp sự cố khi gửi tin nhắn giả lập.';
+      const msg = err instanceof ApiError ? err.detail : t('simulate.failSend');
       setErrorMsg(msg);
     } finally {
       setIsSending(false);
@@ -159,13 +159,13 @@ export const ChatSimulationView: React.FC<ChatSimulationViewProps> = ({ onToast 
 
   const handleUseSuggestion = (suggestion: string) => {
     setInputMessage(suggestion);
-    onToast('Đã dán gợi ý vào ô nhập tin nhắn!');
+    onToast(t('simulate.pasted'));
   };
 
   const handleCreateCustomPersona = (e: React.FormEvent) => {
     e.preventDefault();
     if (!customName.trim() || !customVibe.trim()) {
-      alert('Vui lòng điền tên và mô tả tính cách đối tượng.');
+      alert(t('simulate.needCustom'));
       return;
     }
 
@@ -173,12 +173,12 @@ export const ChatSimulationView: React.FC<ChatSimulationViewProps> = ({ onToast 
       id: `custom-${Date.now()}`,
       name: customName.trim(),
       avatar: '✨',
-      tagline: 'Đối tượng bạn tự tạo',
+      tagline: t('simulate.customTagline'),
       age: customAge || 24,
       archetype: 'custom',
       vibe_description: customVibe.trim(),
-      messaging_style: customStyle.trim() || 'Tự nhiên, phản ứng theo mức độ tinh tế của bạn.',
-      sample_opener_hint: customHint.trim() || 'Mở lời bằng sự chú ý đến sở thích của đối phương.',
+      messaging_style: customStyle.trim() || t('simulate.customStyle'),
+      sample_opener_hint: customHint.trim() || t('simulate.customHint'),
     };
 
     setPersonas((prev) => [...prev, newPersona]);
@@ -186,12 +186,12 @@ export const ChatSimulationView: React.FC<ChatSimulationViewProps> = ({ onToast 
     setMessages([
       {
         role: 'target',
-        content: `Chào bạn, mình là ${newPersona.name}! Rất vui được làm quen.`
+        content: t('simulate.greetingCustom', { name: newPersona.name }),
       }
     ]);
     setCoachFeedback(null);
     setShowCustomModal(false);
-    onToast(`Đã tạo đối tượng "${newPersona.name}" thành công!`);
+    onToast(t('simulate.created', { name: newPersona.name }));
   };
 
   return (
@@ -207,7 +207,7 @@ export const ChatSimulationView: React.FC<ChatSimulationViewProps> = ({ onToast 
             className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-paper-card border border-paper-border text-xs font-mono text-charcoal hover:bg-magenta-50 hover:border-magenta-200 transition-colors cursor-pointer"
           >
             <RotateCcw className="w-3.5 h-3.5 text-magenta-600" />
-            <span>Làm mới hội thoại</span>
+            <span>{t('simulate.reset')}</span>
           </button>
         }
       />
@@ -217,7 +217,7 @@ export const ChatSimulationView: React.FC<ChatSimulationViewProps> = ({ onToast 
         <div className="flex items-center justify-between">
           <p className="text-xs font-bold uppercase tracking-wider text-charcoal flex items-center gap-1.5">
             <UserCheck className="w-4 h-4 text-magenta-600" />
-            <span>Chọn hình mẫu bạn muốn luyện tập cùng:</span>
+            <span>{t('simulate.pick')}</span>
           </p>
           <button
             type="button"
@@ -225,7 +225,7 @@ export const ChatSimulationView: React.FC<ChatSimulationViewProps> = ({ onToast 
             className="text-xs font-semibold text-magenta-600 hover:text-magenta-700 flex items-center gap-1 cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
-            <span>Tự tạo đối tượng</span>
+            <span>{t('simulate.create')}</span>
           </button>
         </div>
 
@@ -250,7 +250,7 @@ export const ChatSimulationView: React.FC<ChatSimulationViewProps> = ({ onToast 
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5">
                       <span className="font-bold text-sm text-charcoal">{p.name}</span>
-                      <span className="text-xs text-charcoal-muted font-mono">{p.age} tuổi</span>
+                      <span className="text-xs text-charcoal-muted font-mono">{t('ui.ageYears', { n: p.age })}</span>
                     </div>
                     <p className="text-xs font-medium text-magenta-700 mt-0.5 truncate">{p.tagline}</p>
                   </div>
@@ -260,7 +260,7 @@ export const ChatSimulationView: React.FC<ChatSimulationViewProps> = ({ onToast 
                 </p>
                 {isSelected && (
                   <span className="absolute top-3 right-3 text-[10px] font-mono font-bold uppercase tracking-wider bg-magenta-600 text-white px-2 py-0.5 rounded-full">
-                    Đang trò chuyện
+                    {t('simulate.chatting')}
                   </span>
                 )}
               </button>
@@ -283,14 +283,14 @@ export const ChatSimulationView: React.FC<ChatSimulationViewProps> = ({ onToast 
                     <span className="font-bold text-sm text-charcoal">{selectedPersona.name}</span>
                     <span className="flex items-center gap-1 text-[11px] text-emerald-600 font-medium">
                       <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                      Trực tuyến
+                      {t('simulate.online')}
                     </span>
                   </div>
                   <p className="text-[11px] text-charcoal-muted line-clamp-1">{selectedPersona.tagline}</p>
                 </div>
               </div>
               <span className="text-[11px] font-mono text-magenta-700 bg-magenta-50 px-2.5 py-1 rounded-full border border-magenta-200 hidden sm:inline-block">
-                Giả lập hẹn hò
+                {t('simulate.simBadge')}
               </span>
             </div>
           )}
@@ -331,7 +331,7 @@ export const ChatSimulationView: React.FC<ChatSimulationViewProps> = ({ onToast 
                   <span className="w-1.5 h-1.5 rounded-full bg-magenta-500 animate-bounce" />
                   <span className="w-1.5 h-1.5 rounded-full bg-magenta-500 animate-bounce [animation-delay:0.2s]" />
                   <span className="w-1.5 h-1.5 rounded-full bg-magenta-500 animate-bounce [animation-delay:0.4s]" />
-                  <span className="ml-1 text-[11px] font-mono">{selectedPersona?.name} đang nhập...</span>
+                  <span className="ml-1 text-[11px] font-mono">{t('simulate.typing', { name: selectedPersona?.name ?? '' })}</span>
                 </div>
               </div>
             )}
@@ -355,7 +355,7 @@ export const ChatSimulationView: React.FC<ChatSimulationViewProps> = ({ onToast 
               type="text"
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
-              placeholder={selectedPersona ? `Nhắn gì đó cho ${selectedPersona.name}...` : 'Nhập tin nhắn...'}
+              placeholder={selectedPersona ? t('simulate.phNamed', { name: selectedPersona.name }) : t('simulate.ph')}
               disabled={isSending}
               className="flex-1 bg-paper-card text-sm text-charcoal px-4 py-2.5 rounded-xl border border-paper-border outline-none focus:ring-2 focus:ring-magenta-500/30 focus:border-magenta-400 placeholder:text-charcoal-muted"
             />
@@ -365,7 +365,7 @@ export const ChatSimulationView: React.FC<ChatSimulationViewProps> = ({ onToast 
               className="min-h-[42px] px-4 rounded-xl bg-magenta-600 hover:bg-magenta-700 disabled:opacity-50 text-white font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
             >
               <Send className="w-4 h-4" />
-              <span className="hidden sm:inline text-xs">Gửi</span>
+              <span className="hidden sm:inline text-xs">{t('simulate.send')}</span>
             </button>
           </form>
         </div>
@@ -377,14 +377,14 @@ export const ChatSimulationView: React.FC<ChatSimulationViewProps> = ({ onToast 
               <div className="flex items-center gap-2 text-magenta-700">
                 <Sparkles className="w-4 h-4 text-magenta-600" />
                 <h3 className="font-bold text-xs uppercase tracking-wider font-mono">
-                  Góp ý từ Dating Coach
+                  {t('simulate.coachTitle')}
                 </h3>
               </div>
               <button
                 type="button"
                 onClick={() => setIsCoachOpen(!isCoachOpen)}
                 className="text-charcoal-muted hover:text-charcoal p-1 rounded-lg"
-                title={isCoachOpen ? 'Thu gọn' : 'Mở rộng'}
+                title={isCoachOpen ? t('simulate.collapse') : t('simulate.expand')}
               >
                 {isCoachOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
               </button>
@@ -395,20 +395,20 @@ export const ChatSimulationView: React.FC<ChatSimulationViewProps> = ({ onToast 
                 <div className="space-y-4 animate-in fade-in duration-300">
                   {/* Vibe Score Badge */}
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-charcoal">Điểm tương tác (Vibe):</span>
+                    <span className="text-xs font-semibold text-charcoal">{t('simulate.vibe')}</span>
                     {coachFeedback.vibe_score === 'positive' && (
                       <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold">
-                        🌟 Rất tự nhiên
+                        {t('simulate.vibePos')}
                       </span>
                     )}
                     {coachFeedback.vibe_score === 'neutral' && (
                       <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-xs font-bold">
-                        ⚖️ Bình thường
+                        {t('simulate.vibeNeu')}
                       </span>
                     )}
                     {coachFeedback.vibe_score === 'warning' && (
                       <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-passion-50 text-passion-700 border border-passion-200 text-xs font-bold">
-                        ⚠️ Cần chú ý nhịp
+                        {t('simulate.vibeWarn')}
                       </span>
                     )}
                   </div>
@@ -416,7 +416,7 @@ export const ChatSimulationView: React.FC<ChatSimulationViewProps> = ({ onToast 
                   {/* Nhận xét giọng điệu */}
                   <div className="space-y-1.5 bg-paper-subtle p-3 rounded-xl border border-paper-border/80">
                     <p className="text-[11px] font-bold uppercase tracking-wider text-charcoal-muted">
-                      Đánh giá phản xạ
+                      {t('simulate.toneEval')}
                     </p>
                     <p className="text-xs text-charcoal leading-relaxed">
                       {coachFeedback.tone_evaluation}
@@ -427,7 +427,7 @@ export const ChatSimulationView: React.FC<ChatSimulationViewProps> = ({ onToast 
                   <div className="space-y-1.5 bg-magenta-50/50 p-3 rounded-xl border border-magenta-200/80">
                     <div className="flex items-center gap-1.5 text-magenta-800 text-[11px] font-bold uppercase tracking-wider">
                       <Lightbulb className="w-3.5 h-3.5 text-magenta-600" />
-                      <span>Lời khuyên tiếp theo</span>
+                      <span>{t('simulate.nextAdvice')}</span>
                     </div>
                     <p className="text-xs text-charcoal leading-relaxed">
                       {coachFeedback.advice}
@@ -438,7 +438,7 @@ export const ChatSimulationView: React.FC<ChatSimulationViewProps> = ({ onToast 
                   {coachFeedback.suggested_replies && coachFeedback.suggested_replies.length > 0 && (
                     <div className="space-y-2">
                       <p className="text-[11px] font-bold uppercase tracking-wider text-charcoal-muted">
-                        Gợi ý câu nhắn tiếp theo (bấm để dán):
+                        {t('simulate.suggested')}
                       </p>
                       <div className="space-y-2">
                         {coachFeedback.suggested_replies.map((reply, idx) => (
@@ -460,9 +460,9 @@ export const ChatSimulationView: React.FC<ChatSimulationViewProps> = ({ onToast 
             ) : (
               <div className="py-8 text-center space-y-2">
                 <HeartHandshake className="w-8 h-8 text-charcoal-muted mx-auto opacity-50" />
-                <p className="text-xs font-semibold text-charcoal">Chưa có phân tích</p>
+                <p className="text-xs font-semibold text-charcoal">{t('simulate.noAnalysis')}</p>
                 <p className="text-[11px] text-charcoal-muted leading-relaxed px-2">
-                  Hãy gửi một tin nhắn cho đối tượng, Coach sẽ phân tích giọng điệu và gợi ý cách tiếp tục.
+                  {t('simulate.noAnalysisHint')}
                 </p>
               </div>
             )}
@@ -473,7 +473,7 @@ export const ChatSimulationView: React.FC<ChatSimulationViewProps> = ({ onToast 
             <div className="bg-paper-card rounded-2xl p-4 border border-paper-border text-xs space-y-1.5">
               <div className="flex items-center gap-1.5 font-bold text-charcoal">
                 <Sparkles className="w-3.5 h-3.5 text-magenta-600" />
-                <span>Chủ đề gợi ý bắt chuyện cùng {selectedPersona.name}:</span>
+                <span>{t('simulate.topicWith', { name: selectedPersona.name })}</span>
               </div>
               <p className="text-[11px] text-charcoal-muted leading-relaxed">
                 {selectedPersona.sample_opener_hint}
@@ -492,7 +492,7 @@ export const ChatSimulationView: React.FC<ChatSimulationViewProps> = ({ onToast 
         >
           <div className="bg-paper-card max-w-lg w-full rounded-3xl p-6 shadow-2xl border border-paper-border space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="font-editorial text-xl text-charcoal">Tự tạo đối tượng giả lập</h2>
+              <h2 className="font-editorial text-xl text-charcoal">{t('simulate.modalTitle')}</h2>
               <button
                 type="button"
                 onClick={() => setShowCustomModal(false)}
@@ -502,24 +502,24 @@ export const ChatSimulationView: React.FC<ChatSimulationViewProps> = ({ onToast 
               </button>
             </div>
             <p className="text-xs text-charcoal-muted">
-              Nhập tính cách hoặc đối tượng bạn đang nhắn tin tìm hiểu, tán tỉnh thường ngày để tập dượt trước.
+              {t('simulate.modalLead')}
             </p>
 
             <form onSubmit={handleCreateCustomPersona} className="space-y-3.5">
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-charcoal">Tên đối tượng:</label>
+                  <label className="text-xs font-bold text-charcoal">{t('simulate.nameLabel')}</label>
                   <input
                     type="text"
                     required
-                    placeholder="VD: Nga, Tuấn..."
+                    placeholder={t('simulate.namePh')}
                     value={customName}
                     onChange={(e) => setCustomName(e.target.value)}
                     className="w-full bg-paper-subtle text-xs p-2.5 rounded-xl border border-paper-border outline-none focus:ring-2 focus:ring-magenta-500/20"
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-charcoal">Tuổi:</label>
+                  <label className="text-xs font-bold text-charcoal">{t('simulate.ageLabel')}</label>
                   <input
                     type="number"
                     min={18}
@@ -532,11 +532,11 @@ export const ChatSimulationView: React.FC<ChatSimulationViewProps> = ({ onToast 
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-bold text-charcoal">Tính cách, sở thích, nghề nghiệp:</label>
+                <label className="text-xs font-bold text-charcoal">{t('simulate.vibeLabel')}</label>
                 <textarea
                   rows={3}
                   required
-                  placeholder="VD: 24 tuổi, làm marketing, thích mèo, hay đi triển lãm tranh, ghét người khoe khoang..."
+                  placeholder={t('simulate.vibePh')}
                   value={customVibe}
                   onChange={(e) => setCustomVibe(e.target.value)}
                   className="w-full bg-paper-subtle text-xs p-2.5 rounded-xl border border-paper-border outline-none focus:ring-2 focus:ring-magenta-500/20"
@@ -544,10 +544,10 @@ export const ChatSimulationView: React.FC<ChatSimulationViewProps> = ({ onToast 
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-bold text-charcoal">Phong cách nhắn tin:</label>
+                <label className="text-xs font-bold text-charcoal">{t('simulate.styleLabel')}</label>
                 <input
                   type="text"
-                  placeholder="VD: Thích đùa, hay thả haha, rep chậm nhưng nhiệt tình..."
+                  placeholder={t('simulate.stylePh')}
                   value={customStyle}
                   onChange={(e) => setCustomStyle(e.target.value)}
                   className="w-full bg-paper-subtle text-xs p-2.5 rounded-xl border border-paper-border outline-none focus:ring-2 focus:ring-magenta-500/20"
@@ -560,13 +560,13 @@ export const ChatSimulationView: React.FC<ChatSimulationViewProps> = ({ onToast 
                   onClick={() => setShowCustomModal(false)}
                   className="px-4 py-2 rounded-xl text-xs font-semibold text-charcoal-muted hover:bg-paper-subtle"
                 >
-                  Hủy
+                  {t('simulate.cancel')}
                 </button>
                 <button
                   type="submit"
                   className="px-5 py-2 rounded-xl text-xs font-semibold bg-magenta-600 hover:bg-magenta-700 text-white shadow-glow-magenta"
                 >
-                  Bắt đầu trò chuyện
+                  {t('simulate.start')}
                 </button>
               </div>
             </form>

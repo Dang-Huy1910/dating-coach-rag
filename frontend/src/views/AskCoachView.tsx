@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useSession } from '../context/SessionContext';
-import { useI18n } from '../i18n/LocaleContext';
+import { tStatic, useI18n } from '../i18n/LocaleContext';
 import { api, ApiError } from '../api/client';
 import { Citation, ProfileImage } from '../api/types';
 import { CitationModal } from '../components/CitationModal';
@@ -32,7 +32,7 @@ async function fileToProfileImage(shot: LocalShot): Promise<ProfileImage> {
   const dataUrl = await new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(String(reader.result || ''));
-    reader.onerror = () => reject(new Error('Không đọc được ảnh.'));
+    reader.onerror = () => reject(new Error(tStatic('error.readImage')));
     reader.readAsDataURL(shot.file);
   });
   const comma = dataUrl.indexOf(',');
@@ -47,27 +47,30 @@ interface AskCoachViewProps {
   onToast: (msg: string) => void;
 }
 
-const KIT_SLOT_LABELS: Record<string, string> = {
-  bio: 'Bio Studio',
-  openers: 'Gợi ý opener',
-  message: 'Tin nhắn',
+const KIT_SLOT_KEYS: Record<string, string> = {
+  bio: 'ask.kitBio',
+  openers: 'ask.kitOpeners',
+  message: 'ask.kitMessage',
 };
 
-function kitSavedMessage(slots: string[] | null | undefined): string | null {
+function kitSavedMessage(
+  slots: string[] | null | undefined,
+  t: (key: string, vars?: Record<string, string | number>) => string,
+): string | null {
   if (!slots || slots.length === 0) {
     return null;
   }
-  const parts = slots.map((s) => KIT_SLOT_LABELS[s]).filter(Boolean);
+  const parts = slots.map((s) => (KIT_SLOT_KEYS[s] ? t(KIT_SLOT_KEYS[s]) : '')).filter(Boolean);
   if (parts.length === 0) {
     return null;
   }
   if (parts.length === 1) {
-    return `Đã lưu vào ${parts[0]} trong phiên này.`;
+    return t('ask.kitSaved1', { slot: parts[0] });
   }
   if (parts.length === 2) {
-    return `Đã lưu vào ${parts[0]} và ${parts[1]} trong phiên này.`;
+    return t('ask.kitSaved2', { a: parts[0], b: parts[1] });
   }
-  return `Đã lưu vào ${parts.slice(0, -1).join(', ')} và ${parts[parts.length - 1]} trong phiên này.`;
+  return t('ask.kitSavedMany', { list: parts.slice(0, -1).join(', '), last: parts[parts.length - 1] });
 }
 
 export const AskCoachView: React.FC<AskCoachViewProps> = ({ initialPrompt, onToast }) => {
@@ -84,17 +87,13 @@ export const AskCoachView: React.FC<AskCoachViewProps> = ({ initialPrompt, onToa
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const starterPrompts = [
-    'Bio hẹn hò ngắn nên viết thế nào?',
-    'Làm sao từ chối lịch sự khi không hợp vibe?',
-    'Cách mở lời tự nhiên không nhạt?',
-    'Khi nào nên chủ động hẹn gặp mặt ngoài đời?',
+    t('ask.starter1'),
+    t('ask.starter2'),
+    t('ask.starter3'),
+    t('ask.starter4'),
   ];
 
-  const followUpSuggestions = [
-    'Giúp tôi sửa bio hiện tại theo công thức 3 nhịp trên',
-    'Người hướng nội thì nên đặt câu hỏi mở như thế nào?',
-    'Có nên ghi rõ gu hoặc tiêu chuẩn tìm kiếm trong bio không?',
-  ];
+  const followUpSuggestions = [t('ask.follow1'), t('ask.follow2'), t('ask.follow3')];
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -109,11 +108,11 @@ export const AskCoachView: React.FC<AskCoachViewProps> = ({ initialPrompt, onToa
     const next: LocalShot[] = [];
     for (const file of files) {
       if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
-        setErrorMessage('Ảnh phải là JPEG, PNG hoặc WebP — screenshot bài/profile bạn đã thấy.');
+        setErrorMessage(t('ask.imageType'));
         continue;
       }
       if (file.size > MAX_IMAGE_BYTES) {
-        setErrorMessage('Ảnh quá lớn, hãy gửi screenshot dưới 2MB mỗi tấm.');
+        setErrorMessage(t('ask.imageTooBig'));
         continue;
       }
       next.push({
@@ -126,13 +125,13 @@ export const AskCoachView: React.FC<AskCoachViewProps> = ({ initialPrompt, onToa
       const room = MAX_SCREENSHOTS - current.length;
       if (room <= 0) {
         next.forEach((shot) => URL.revokeObjectURL(shot.previewUrl));
-        setErrorMessage(`Chỉ gửi tối đa ${MAX_SCREENSHOTS} ảnh mỗi lần.`);
+        setErrorMessage(t('ask.imageMax', { n: MAX_SCREENSHOTS }));
         return current;
       }
       const accepted = next.slice(0, room);
       next.slice(room).forEach((shot) => URL.revokeObjectURL(shot.previewUrl));
       if (next.length > room) {
-        setErrorMessage(`Chỉ gửi tối đa ${MAX_SCREENSHOTS} ảnh mỗi lần.`);
+        setErrorMessage(t('ask.imageMax', { n: MAX_SCREENSHOTS }));
       }
       return [...current, ...accepted];
     });
@@ -208,7 +207,7 @@ export const AskCoachView: React.FC<AskCoachViewProps> = ({ initialPrompt, onToa
       setInputValue('');
       setShots([]);
     } catch (err: unknown) {
-      const msg = err instanceof ApiError ? err.detail : 'Không thể gửi câu hỏi đến Coach.';
+      const msg = err instanceof ApiError ? err.detail : t('ask.fail');
       setErrorMessage(msg);
     } finally {
       setIsSubmitting(false);
@@ -221,7 +220,7 @@ export const AskCoachView: React.FC<AskCoachViewProps> = ({ initialPrompt, onToa
         setCopiedKey(key);
         setTimeout(() => setCopiedKey(null), 2000);
       }
-      onToast('Đã sao chép nội dung vào khay nhớ tạm!');
+      onToast(t('ask.copyToast'));
     });
   };
 
@@ -245,7 +244,7 @@ export const AskCoachView: React.FC<AskCoachViewProps> = ({ initialPrompt, onToa
           </div>
           <div className="inline-flex items-center gap-2 text-xs font-mono text-charcoal-muted bg-paper-card px-3.5 py-1.5 rounded-full border border-paper-border shadow-xs shrink-0">
             <BookOpen className="w-3.5 h-3.5 text-magenta-600" aria-hidden="true" />
-            <span className="hidden sm:inline">RAG · Gắn bó & giao tiếp</span>
+            <span className="hidden sm:inline">{t('ask.ragBadge')}</span>
             <span className="sm:hidden">RAG</span>
           </div>
         </div>
@@ -313,21 +312,20 @@ export const AskCoachView: React.FC<AskCoachViewProps> = ({ initialPrompt, onToa
           {/* Heading */}
           <div className="flex flex-col items-center gap-2 max-w-lg mb-8">
             <span className="text-xs font-mono font-bold uppercase tracking-widest text-magenta-700">
-              Phòng tham vấn cá nhân
+              {t('ask.emptyKicker')}
             </span>
             <h2 className="font-editorial text-3xl sm:text-4xl text-charcoal font-normal tracking-tight">
-              Bắt đầu với một sự chân thật.
+              {t('ask.emptyTitle')}
             </h2>
             <p className="text-sm text-charcoal-muted max-w-md mt-1 leading-relaxed">
-              Chọn gợi ý bên dưới hoặc gõ câu hỏi / dán bio hay tin nhắn — không cần đổi tab.
-              Câu trả lời có citation khi thư viện đủ mạnh.
+              {t('ask.emptyLead')}
             </p>
           </div>
 
           {/* Starter Chips */}
           <div className="flex flex-col items-center gap-3 w-full">
             <span className="text-xs uppercase tracking-wider text-charcoal-muted font-medium">
-              Gợi ý chủ đề chiêm nghiệm
+              {t('ask.starterLabel')}
             </span>
             <div className="flex flex-wrap items-center justify-center gap-2.5 max-w-xl">
               {starterPrompts.map((prompt, idx) => (
@@ -420,19 +418,19 @@ export const AskCoachView: React.FC<AskCoachViewProps> = ({ initialPrompt, onToa
                     <div className="pl-1 grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
                       {msg.coachReply.tone ? (
                         <div className="rounded-xl bg-passion-50 border border-passion-200 px-3 py-2">
-                          <div className="font-mono font-bold text-passion-700 mb-0.5">Giọng điệu</div>
+                          <div className="font-mono font-bold text-passion-700 mb-0.5">{t('ask.toneShort')}</div>
                           <div className="text-charcoal">{msg.coachReply.tone}</div>
                         </div>
                       ) : null}
                       {msg.coachReply.clarity ? (
                         <div className="rounded-xl bg-magenta-50 border border-magenta-200 px-3 py-2">
-                          <div className="font-mono font-bold text-magenta-800 mb-0.5">Độ rõ</div>
+                          <div className="font-mono font-bold text-magenta-800 mb-0.5">{t('ask.clarityShort')}</div>
                           <div className="text-charcoal">{msg.coachReply.clarity}</div>
                         </div>
                       ) : null}
                       {msg.coachReply.risk ? (
                         <div className="rounded-xl bg-passion-50 border border-passion-200 px-3 py-2">
-                          <div className="font-mono font-bold text-passion-700 mb-0.5">Rủi ro</div>
+                          <div className="font-mono font-bold text-passion-700 mb-0.5">{t('ask.riskShort')}</div>
                           <div className="text-charcoal">{msg.coachReply.risk}</div>
                         </div>
                       ) : null}
@@ -444,8 +442,8 @@ export const AskCoachView: React.FC<AskCoachViewProps> = ({ initialPrompt, onToa
                   <CopyReadyCard
                     title={
                       msg.coachReply.intent === 'analyze_message'
-                        ? 'Bản viết lại gợi ý'
-                        : 'Bản sửa gợi ý (Copy-Ready)'
+                        ? t('message.rewriteTitle')
+                        : t('bio.rewriteTitle')
                     }
                     content={msg.coachReply.improved_draft}
                     onCopy={() => handleCopy(msg.coachReply.improved_draft!, `${msg.id}-draft`)}
@@ -462,14 +460,14 @@ export const AskCoachView: React.FC<AskCoachViewProps> = ({ initialPrompt, onToa
                       >
                         <div className="flex items-center justify-between gap-2">
                           <span className="text-xs font-bold text-charcoal uppercase tracking-wider">
-                            Phương án 0{idx + 1}
+                            {t('ui.option', { n: idx + 1 })}
                           </span>
                           <button
                             type="button"
                             onClick={() => handleCopy(opener, `${msg.id}-op-${idx}`)}
                             className="text-[11px] font-semibold text-magenta-700 hover:text-magenta-900 cursor-pointer"
                           >
-                            {copiedKey === `${msg.id}-op-${idx}` ? 'Đã chép!' : 'Sao chép'}
+                            {copiedKey === `${msg.id}-op-${idx}` ? t('ui.copied') : t('ui.copy')}
                           </button>
                         </div>
                         <p className="font-editorial text-base text-charcoal italic leading-relaxed">
@@ -481,7 +479,7 @@ export const AskCoachView: React.FC<AskCoachViewProps> = ({ initialPrompt, onToa
                 ) : null}
 
                 {(() => {
-                  const saved = kitSavedMessage(msg.coachReply.kit_updated);
+                  const saved = kitSavedMessage(msg.coachReply.kit_updated, t);
                   return saved ? (
                     <div className="text-xs text-magenta-800 bg-magenta-50 px-3.5 py-2.5 rounded-xl border border-magenta-200">
                       {saved}
@@ -495,7 +493,7 @@ export const AskCoachView: React.FC<AskCoachViewProps> = ({ initialPrompt, onToa
           {/* Follow-up suggestions box */}
           <div className="bg-paper-card rounded-2xl p-5 border border-paper-border shadow-xs space-y-3">
             <span className="text-xs font-bold uppercase tracking-wider text-charcoal-muted">
-              Gợi ý chuyển nhịp tiếp theo
+              {t('ask.followLabel')}
             </span>
             <div className="flex flex-wrap gap-2">
               {followUpSuggestions.map((suggestion, idx) => (
@@ -558,7 +556,7 @@ export const AskCoachView: React.FC<AskCoachViewProps> = ({ initialPrompt, onToa
                       type="button"
                       onClick={() => removeShot(shot.id)}
                       className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-charcoal text-white flex items-center justify-center cursor-pointer"
-                      aria-label="Gỡ ảnh"
+                      aria-label={t('ui.removeImage')}
                     >
                       <X className="w-3 h-3" />
                     </button>

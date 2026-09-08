@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useSession } from '../context/SessionContext';
 import { useI18n } from '../i18n/LocaleContext';
+import { STRINGS } from '../i18n/strings';
 import { api, ApiError } from '../api/client';
 import { Citation, CoachReply } from '../api/types';
 import { AiStatusBadge } from '../components/AiStatusBadge';
@@ -74,13 +75,9 @@ function MetricCard({
 
 export const MessageView: React.FC<MessageViewProps> = ({ onToast }) => {
   const { executeWithSession, kit, refreshKit } = useSession();
-  const { t } = useI18n();
-  const [draft, setDraft] = useState<string>(
-    'Hey, mình thấy profile bạn khá thú vị. Bạn có muốn đi uống cà phê cuối tuần này không?',
-  );
-  const [notes, setNotes] = useState<string>(
-    'Lịch sử: quen qua dating app, đã nhắn 2-3 tin. Mục tiêu: mời đi cà phê cuối tuần, lịch thoáng.',
-  );
+  const { locale, t } = useI18n();
+  const [draft, setDraft] = useState<string>(() => t('message.sampleDraft'));
+  const [notes, setNotes] = useState<string>(() => t('message.sampleNotes'));
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
   const [coachReply, setCoachReply] = useState<CoachReply | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -106,8 +103,7 @@ export const MessageView: React.FC<MessageViewProps> = ({ onToast }) => {
     }
     setCoachReply({
       reply:
-        kit.message_analysis?.trim() ||
-        'Đã điền từ phiên coach — bạn có thể phân tích lại nếu muốn.',
+        kit.message_analysis?.trim() || t('message.kitFill'),
       citations: [],
       refused: false,
       hedged: false,
@@ -120,7 +116,20 @@ export const MessageView: React.FC<MessageViewProps> = ({ onToast }) => {
     });
     setFromKit(true);
     setAnalyzedAt(null);
-  }, [kit, hydratedKey]);
+  }, [kit, hydratedKey, t]);
+
+  useEffect(() => {
+    const sampleDrafts = new Set([
+      STRINGS.vi['message.sampleDraft'],
+      STRINGS.en['message.sampleDraft'],
+    ]);
+    const sampleNotes = new Set([
+      STRINGS.vi['message.sampleNotes'],
+      STRINGS.en['message.sampleNotes'],
+    ]);
+    if (!fromKit && sampleDrafts.has(draft)) setDraft(t('message.sampleDraft'));
+    if (!fromKit && sampleNotes.has(notes)) setNotes(t('message.sampleNotes'));
+  }, [locale, t]);
 
   const hasResult = Boolean(coachReply);
   const hasAiMetrics = Boolean(
@@ -135,7 +144,7 @@ export const MessageView: React.FC<MessageViewProps> = ({ onToast }) => {
 
   const handleAnalyze = async () => {
     if (!draft.trim()) {
-      setErrorMsg('Vui lòng nhập nội dung tin nhắn cần phân tích.');
+      setErrorMsg(t('message.needDraft'));
       return;
     }
 
@@ -157,7 +166,7 @@ export const MessageView: React.FC<MessageViewProps> = ({ onToast }) => {
         `${now.getHours()}:${now.getMinutes().toString().padStart(2, '0')}`,
       );
     } catch (err: unknown) {
-      const msg = err instanceof ApiError ? err.detail : 'Không thể phân tích tin nhắn.';
+      const msg = err instanceof ApiError ? err.detail : t('message.fail');
       setErrorMsg(msg);
     } finally {
       setIsAnalyzing(false);
@@ -166,12 +175,12 @@ export const MessageView: React.FC<MessageViewProps> = ({ onToast }) => {
 
   const handleCopyDraft = () => {
     if (!currentSuggestion) {
-      onToast('Chưa có bản sửa để sao chép — hãy phân tích trước.');
+      onToast(t('message.copyNeed'));
       return;
     }
     navigator.clipboard.writeText(currentSuggestion).then(() => {
       setCopied(true);
-      onToast('Đã sao chép bản sửa vào khay nhớ tạm!');
+      onToast(t('message.copied'));
       setTimeout(() => setCopied(false), 2000);
     });
   };
@@ -194,10 +203,10 @@ export const MessageView: React.FC<MessageViewProps> = ({ onToast }) => {
                 className={modeLabelClass}
               >
                 <MessageSquare className="w-4 h-4 text-magenta-600" aria-hidden="true" />
-                <span>Tin nhắn sắp gửi</span>
+                <span>{t('message.draftLabel')}</span>
               </label>
               <span className="text-[11px] font-mono text-charcoal-muted bg-paper-subtle px-2.5 py-0.5 rounded-full border border-paper-border">
-                Bản nháp
+                {t('common.draft')}
               </span>
             </div>
 
@@ -211,7 +220,7 @@ export const MessageView: React.FC<MessageViewProps> = ({ onToast }) => {
                 setAnalyzedAt(null);
                 setFromKit(false);
               }}
-              placeholder="Dán hoặc gõ nội dung tin nhắn bạn đang ngập ngừng muốn gửi..."
+              placeholder={t('message.draftPh')}
               className="w-full bg-paper-subtle text-charcoal text-sm p-4 rounded-xl resize-none outline-none focus:bg-paper-card focus:ring-2 focus:ring-magenta-500/20 focus:border-magenta-500 transition-all border border-paper-border leading-relaxed"
             />
 
@@ -220,7 +229,7 @@ export const MessageView: React.FC<MessageViewProps> = ({ onToast }) => {
                 htmlFor="message-notes"
                 className="text-xs font-bold text-charcoal-muted uppercase tracking-wider"
               >
-                Ghi chú thêm (tuỳ chọn)
+                {t('message.notesLabel')}
               </label>
               <textarea
                 id="message-notes"
@@ -232,14 +241,15 @@ export const MessageView: React.FC<MessageViewProps> = ({ onToast }) => {
                   setAnalyzedAt(null);
                   setFromKit(false);
                 }}
-                placeholder="Ngữ cảnh: đã chat bao lâu, mục tiêu tin nhắn, điều muốn tránh…"
+                placeholder={t('message.notesPh')}
                 className="mt-2 w-full bg-paper-subtle text-charcoal text-sm p-3 rounded-xl resize-none outline-none focus:bg-paper-card focus:ring-2 focus:ring-magenta-500/20 border border-paper-border leading-relaxed"
               />
             </div>
 
             <div className="flex items-center justify-between text-[11px] text-charcoal-muted">
               <span>
-                {draft.length} ký tự • {draft.includes('?') ? 'Có câu hỏi' : 'Đang soạn'}
+                {t('common.chars', { n: draft.length })} •{' '}
+                {draft.includes('?') ? t('message.hasQuestion') : t('message.drafting')}
               </span>
               <button
                 type="button"
@@ -251,13 +261,13 @@ export const MessageView: React.FC<MessageViewProps> = ({ onToast }) => {
                 }}
                 className="hover:text-passion-600 transition-colors cursor-pointer"
               >
-                Xóa nháp
+                {t('message.clear')}
               </button>
             </div>
 
             {fromKit && (
               <div className="text-xs text-magenta-800 bg-magenta-50 p-2.5 rounded-lg border border-magenta-200">
-                Đã điền từ phiên coach
+                {t('common.fromKit')}
               </div>
             )}
 
@@ -276,11 +286,10 @@ export const MessageView: React.FC<MessageViewProps> = ({ onToast }) => {
               </div>
               <div className="space-y-1">
                 <span className="text-xs font-bold text-passion-900 uppercase tracking-wider">
-                  Gợi ý dùng chế độ này
+                  {t('message.tipTitle')}
                 </span>
                 <p className="text-xs text-charcoal-muted leading-relaxed">
-                  Phân tích trước khi gửi giúp giảm áp lực vô thức (đòi reply, mơ hồ, hoặc lời mời quá
-                  rộng).
+                  {t('message.tipBody')}
                 </p>
               </div>
             </div>
@@ -297,7 +306,7 @@ export const MessageView: React.FC<MessageViewProps> = ({ onToast }) => {
                 aria-hidden="true"
               />
               <span>
-                {isAnalyzing ? 'Đang phân tích tin nhắn…' : 'Phân tích & gợi ý bản viết lại'}
+                {isAnalyzing ? t('message.analyzing') : t('message.cta')}
               </span>
             </button>
           </div>
@@ -305,13 +314,13 @@ export const MessageView: React.FC<MessageViewProps> = ({ onToast }) => {
           <div className="bg-paper-card rounded-2xl p-5 shadow-sm border border-paper-border flex items-center gap-4">
             <Sparkline />
             <div className="space-y-1">
-              <div className="text-xs font-bold text-charcoal">Trạng thái phân tích</div>
+              <div className="text-xs font-bold text-charcoal">{t('message.statusTitle')}</div>
               <p className="text-xs text-charcoal-muted leading-relaxed">
                 {hasFullAiMetrics
-                  ? 'Tone / rõ ý / rủi ro do Coach AI gen trong lần phân tích này.'
+                  ? t('message.statusFull')
                   : hasAiMetrics
-                    ? 'AI đã trả một phần chỉ số — không dùng heuristic giả.'
-                    : 'Chỉ số chỉ hiện khi Coach AI trả lời — không ước lượng local.'}
+                    ? t('message.statusPartial')
+                    : t('message.statusIdle')}
               </p>
             </div>
           </div>
@@ -319,7 +328,7 @@ export const MessageView: React.FC<MessageViewProps> = ({ onToast }) => {
           <div className="bg-paper-card rounded-2xl p-5 border border-paper-border space-y-2">
             <div className="text-xs font-bold text-charcoal-muted uppercase tracking-wider flex items-center gap-1.5">
               <Bookmark className="w-3.5 h-3.5 text-magenta-600" aria-hidden="true" />
-              <span>Cơ sở RAG / Citations</span>
+              <span>{t('common.rag')}</span>
             </div>
             <div className="flex flex-wrap gap-2">
               {hasResult && coachReply?.citations && coachReply.citations.length > 0 ? (
@@ -336,7 +345,7 @@ export const MessageView: React.FC<MessageViewProps> = ({ onToast }) => {
                 ))
               ) : (
                 <span className="inline-flex items-center gap-1 bg-paper-subtle text-charcoal-muted px-3 py-1 rounded-full text-xs border border-paper-border font-mono">
-                  Sẽ hiện sau khi phân tích
+                  {t('message.citeSoon')}
                 </span>
               )}
             </div>
@@ -358,37 +367,39 @@ export const MessageView: React.FC<MessageViewProps> = ({ onToast }) => {
                     id="diagnostic-heading"
                     className="text-xs font-bold uppercase tracking-wider text-charcoal"
                   >
-                    Chẩn đoán phản xạ truyền đạt
+                    {t('message.diagTitle')}
                   </h2>
                 </div>
                 <p className="text-[11px] text-charcoal-muted leading-relaxed max-w-md">
                   {hasFullAiMetrics
-                    ? 'Ba nhãn do Coach AI tạo (bắt buộc trong analyze-message).'
+                    ? t('message.diagFull')
                     : hasAiMetrics
-                      ? 'Một phần chỉ số đã có từ AI.'
-                      : 'Chờ AI gen — không điền sẵn bằng code heuristic.'}
+                      ? t('message.diagPartial')
+                      : t('message.diagIdle')}
                 </p>
               </div>
               <AiStatusBadge
                 status={hasAiMetrics ? 'ready' : isAnalyzing ? 'loading' : 'idle'}
-                loadingLabel="AI đang phân tích…"
+                readyLabel={t('message.aiFromCoach')}
+                loadingLabel={t('message.loadingAi')}
+                idleLabel={t('message.aiWait')}
               />
             </div>
 
             {hasAiMetrics ? (
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <MetricCard
-                  label="Giọng điệu (Tone)"
+                  label={t('message.tone')}
                   value={coachReply?.tone || '—'}
                   tone="passion"
                 />
                 <MetricCard
-                  label="Độ rõ (Clarity)"
+                  label={t('message.clarity')}
                   value={coachReply?.clarity || '—'}
                   tone="magenta"
                 />
                 <MetricCard
-                  label="Rủi ro giao tiếp"
+                  label={t('message.risk')}
                   value={coachReply?.risk || '—'}
                   tone="passion"
                 />
@@ -396,9 +407,9 @@ export const MessageView: React.FC<MessageViewProps> = ({ onToast }) => {
             ) : (
               <div className="space-y-3">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <MetricSkeleton label="Giọng điệu (Tone)" />
-                  <MetricSkeleton label="Độ rõ (Clarity)" />
-                  <MetricSkeleton label="Rủi ro giao tiếp" />
+                  <MetricSkeleton label={t('message.tone')} />
+                  <MetricSkeleton label={t('message.clarity')} />
+                  <MetricSkeleton label={t('message.risk')} />
                 </div>
                 <div className="rounded-xl border border-dashed border-magenta-200/80 bg-gradient-to-br from-magenta-50/70 via-paper-card to-passion-50/40 px-4 py-3.5 flex items-start gap-3">
                   <div className="w-9 h-9 rounded-xl bg-white border border-magenta-100 text-magenta-600 flex items-center justify-center shrink-0 shadow-sm">
@@ -406,14 +417,10 @@ export const MessageView: React.FC<MessageViewProps> = ({ onToast }) => {
                   </div>
                   <div className="space-y-1 min-w-0">
                     <p className="text-xs font-semibold text-charcoal">
-                      {isAnalyzing
-                        ? 'Coach AI đang đọc tin nhắn của bạn…'
-                        : 'Chưa có chẩn đoán từ AI'}
+                      {isAnalyzing ? t('message.reading') : t('message.noDiag')}
                     </p>
                     <p className="text-[11px] text-charcoal-muted leading-relaxed">
-                      {isAnalyzing
-                        ? 'Tone / rõ ý / rủi ro sẽ được AI điền — không dùng điểm heuristic.'
-                        : 'Nhấn “Phân tích & gợi ý bản viết lại” để Coach AI tạo ba chỉ số và khung trả lời.'}
+                      {isAnalyzing ? t('message.readingHint') : t('message.noDiagHint')}
                     </p>
                   </div>
                 </div>
@@ -421,67 +428,66 @@ export const MessageView: React.FC<MessageViewProps> = ({ onToast }) => {
             )}
 
             <p className="text-[11px] text-charcoal-muted leading-relaxed">
-              Rủi ro = áp lực / ranh giới / rõ ý —{' '}
-              <span className="italic">không phải chẩn đoán tâm lý lâm sàng</span>.
+              {t('message.riskNote')}
+              <span className="italic">{t('message.riskNoteEm')}</span>.
             </p>
           </section>
 
           <section aria-busy={isAnalyzing}>
             {isAnalyzing ? (
-              <CoachBubbleLoading label="Đang phân tích tin nhắn…" />
+              <CoachBubbleLoading label={t('message.analyzing')} />
             ) : coachReply ? (
               <CoachBubble
                 reply={coachReply}
                 timestamp={analyzedAt}
-                subtitle="Phân tích tin nhắn sắp gửi"
+                subtitle={t('message.bubbleSub')}
                 onCitationClick={setActiveCitation}
                 onCopyReply={(text) => {
                   navigator.clipboard.writeText(text).then(() => {
-                    onToast('Đã sao chép câu trả lời Coach!');
+                    onToast(t('message.copyReply'));
                   });
                 }}
               >
                 {coachReply.hedged && !coachReply.refused ? (
                   <p className="pl-1 text-xs text-charcoal-muted leading-relaxed">
-                    Coach đang thận trọng vì thư viện có thể chỉ hỗ trợ một phần — không bịa nghiên
-                    cứu.
+                    {t('message.hedge')}
                   </p>
                 ) : null}
               </CoachBubble>
             ) : (
               <EmptyAiState
-                title="Coach chưa trả lời"
-                description="Sau khi phân tích, khung này sẽ hiện giống phòng Ask: avatar Coach, citations RAG, nội dung AI và nút sao chép."
-                hint="Bước tiếp theo → nút phân tích bên trái"
+                title={t('message.emptyTitle')}
+                description={t('message.emptyDesc')}
+                hint={t('message.emptyHint')}
               />
             )}
           </section>
 
           <CopyReadyCard
-            title="Bản viết lại gợi ý"
+            title={t('message.rewriteTitle')}
             content={currentSuggestion}
             isLoading={isAnalyzing}
-            emptyText="Bản viết lại do AI sẽ hiện ở box riêng này sau khi phân tích."
+            emptyText={t('message.rewriteEmpty')}
             onCopy={handleCopyDraft}
             copied={copied}
-            footerHint="Giữ ý mời / mục tiêu • Giảm áp lực phòng thủ khi có thể"
+            footerHint={t('message.rewriteHint')}
           />
 
           <section className="bg-paper-card rounded-2xl p-5 shadow-sm border border-paper-border space-y-3">
             <div className="text-xs font-bold uppercase tracking-wider text-charcoal-muted">
-              Bảng so sánh nhanh
+              {t('message.compare')}
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
               <div className="bg-passion-50 p-3.5 rounded-xl border border-passion-200">
-                <span className="text-xs font-bold text-passion-700 font-mono">Bản gốc</span>
+                <span className="text-xs font-bold text-passion-700 font-mono">{t('message.original')}</span>
                 <p className="text-xs text-charcoal-muted mt-1 leading-relaxed line-clamp-4">
                   {draft.trim() || '—'}
                 </p>
               </div>
               <div className="bg-magenta-50 p-3.5 rounded-xl border border-magenta-200">
-                <span className="text-xs font-bold text-magenta-800 font-mono">Bản sửa Coach</span>
+                <span className="text-xs font-bold text-magenta-800 font-mono">{t('message.revised')}</span>
                 <p className="text-xs text-charcoal-muted mt-1 leading-relaxed line-clamp-4">
-                  {currentSuggestion || 'Chưa có — chờ AI phân tích.'}
+                  {currentSuggestion || t('message.revisedEmpty')}
                 </p>
               </div>
             </div>

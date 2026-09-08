@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useSession } from '../context/SessionContext';
-import { useI18n } from '../i18n/LocaleContext';
+import { isCatalogSample, tStatic, useI18n } from '../i18n/LocaleContext';
 import { api, ApiError } from '../api/client';
 import { Citation, CoachReply, ProfileImage } from '../api/types';
 import { AiStatusBadge } from '../components/AiStatusBadge';
@@ -54,7 +54,7 @@ async function fileToProfileImage(shot: LocalShot): Promise<ProfileImage> {
   const dataUrl = await new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(String(reader.result || ''));
-    reader.onerror = () => reject(new Error('Không đọc được ảnh.'));
+    reader.onerror = () => reject(new Error(tStatic('error.readImage')));
     reader.readAsDataURL(shot.file);
   });
   const comma = dataUrl.indexOf(',');
@@ -68,12 +68,12 @@ async function fileToProfileImage(shot: LocalShot): Promise<ProfileImage> {
 
 export const ProfileContextView: React.FC<ProfileContextViewProps> = ({ onToast }) => {
   const { executeWithSession } = useSession();
-  const { t } = useI18n();
+  const { locale, t } = useI18n();
   const [handle, setHandle] = useState('');
   const [profileUrl, setProfileUrl] = useState('');
   const [visibleText, setVisibleText] = useState('');
   const [relationship, setRelationship] = useState('');
-  const [question, setQuestion] = useState('Gợi ý opener lịch sự, không theo dõi quá.');
+  const [question, setQuestion] = useState(() => t('profile.sampleQ'));
   const [shots, setShots] = useState<LocalShot[]>([]);
   const [activeShotId, setActiveShotId] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -91,11 +91,11 @@ export const ProfileContextView: React.FC<ProfileContextViewProps> = ({ onToast 
     const next: LocalShot[] = [];
     for (const file of files) {
       if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
-        setErrorMsg('Ảnh phải là JPEG, PNG hoặc WebP — screenshot bài/story bạn đã thấy.');
+        setErrorMsg(t('profile.imageType'));
         continue;
       }
       if (file.size > MAX_IMAGE_BYTES) {
-        setErrorMsg('Ảnh quá lớn, hãy gửi screenshot dưới 2MB mỗi tấm.');
+        setErrorMsg(t('profile.imageTooBig'));
         continue;
       }
       next.push({
@@ -110,13 +110,13 @@ export const ProfileContextView: React.FC<ProfileContextViewProps> = ({ onToast 
       const room = MAX_SCREENSHOTS - current.length;
       if (room <= 0) {
         next.forEach((shot) => URL.revokeObjectURL(shot.previewUrl));
-        setErrorMsg(`Chỉ gửi tối đa ${MAX_SCREENSHOTS} ảnh mỗi lần.`);
+        setErrorMsg(t('profile.imageMax', { n: MAX_SCREENSHOTS }));
         return current;
       }
       const accepted = next.slice(0, room);
       next.slice(room).forEach((shot) => URL.revokeObjectURL(shot.previewUrl));
       if (next.length > room) {
-        setErrorMsg(`Chỉ gửi tối đa ${MAX_SCREENSHOTS} ảnh mỗi lần.`);
+        setErrorMsg(t('profile.imageMax', { n: MAX_SCREENSHOTS }));
       }
       return [...current, ...accepted];
     });
@@ -152,11 +152,17 @@ export const ProfileContextView: React.FC<ProfileContextViewProps> = ({ onToast 
         event.preventDefault();
       }
       addFiles(files);
-      onToast(`Đã dán ${files.length} ảnh từ clipboard.`);
+      onToast(t('profile.pasteToast', { n: files.length }));
     };
     window.addEventListener('paste', onPaste);
     return () => window.removeEventListener('paste', onPaste);
-  }, [onToast]);
+  }, [onToast, t]);
+
+  useEffect(() => {
+    if (isCatalogSample('profile.sampleQ', question)) {
+      setQuestion(t('profile.sampleQ'));
+    }
+  }, [locale, t]);
 
   useEffect(() => {
     return () => {
@@ -170,9 +176,7 @@ export const ProfileContextView: React.FC<ProfileContextViewProps> = ({ onToast 
     const url = profileUrl.trim();
     if (!trimmedVisible && shots.length === 0 && !url) {
       setErrorMsg(
-        handle.trim()
-          ? 'Handle chỉ để ghi nhớ. Hãy dán link YouTube/Reddit, caption, hoặc ảnh.'
-          : 'Hãy dán link YouTube/Reddit, bio/caption, hoặc thêm ảnh (Ctrl+V).',
+        handle.trim() ? t('profile.needHandle') : t('profile.needContext'),
       );
       return;
     }
@@ -225,7 +229,7 @@ export const ProfileContextView: React.FC<ProfileContextViewProps> = ({ onToast 
       if (err instanceof ApiError) {
         setErrorMsg(err.detail);
       } else {
-        setErrorMsg('Không thể coach từ ngữ cảnh profile.');
+        setErrorMsg(t('profile.fail'));
       }
     } finally {
       setIsGenerating(false);
@@ -235,7 +239,7 @@ export const ProfileContextView: React.FC<ProfileContextViewProps> = ({ onToast 
   const handleCopy = (text: string, index: number) => {
     navigator.clipboard.writeText(text).then(() => {
       setCopiedIndex(index);
-      onToast('Đã sao chép câu mở đầu!');
+      onToast(t('profile.copied'));
       setTimeout(() => setCopiedIndex(null), 2000);
     });
   };
@@ -256,7 +260,7 @@ export const ProfileContextView: React.FC<ProfileContextViewProps> = ({ onToast 
               className={modeLabelClass}
             >
               <AtSign className="w-4 h-4 text-magenta-600" aria-hidden="true" />
-              Handle (tuỳ chọn, chưa lưu)
+              {t('profile.handleLabel')}
             </label>
             <input
               id="profile-handle"
@@ -264,14 +268,14 @@ export const ProfileContextView: React.FC<ProfileContextViewProps> = ({ onToast 
               value={handle}
               maxLength={128}
               onChange={(e) => setHandle(e.target.value)}
-              placeholder="@tên để ghi nhớ sitting"
+              placeholder={t('profile.handlePh')}
               className={modeInputClass}
             />
           </div>
           <div className="space-y-1.5">
             <label htmlFor="profile-url" className={modeLabelClass}>
               <Link2 className="w-4 h-4 text-magenta-600" aria-hidden="true" />
-              Link YouTube hoặc Reddit
+              {t('profile.urlLabel')}
             </label>
             <input
               id="profile-url"
@@ -279,7 +283,7 @@ export const ProfileContextView: React.FC<ProfileContextViewProps> = ({ onToast 
               value={profileUrl}
               maxLength={500}
               onChange={(e) => setProfileUrl(e.target.value)}
-              placeholder="https://youtube.com/@… hoặc reddit.com/user/…"
+              placeholder={t('profile.urlPh')}
               className={modeInputClass}
             />
           </div>
@@ -288,7 +292,7 @@ export const ProfileContextView: React.FC<ProfileContextViewProps> = ({ onToast 
         <div className="space-y-1.5">
           <label htmlFor="profile-relationship" className={modeLabelClass}>
             <Heart className="w-4 h-4 text-magenta-600" aria-hidden="true" />
-            Mối quan hệ đang tiến triển tới đâu?
+            {t('profile.relLabel')}
           </label>
           <textarea
             id="profile-relationship"
@@ -296,7 +300,7 @@ export const ProfileContextView: React.FC<ProfileContextViewProps> = ({ onToast 
             maxLength={2000}
             value={relationship}
             onChange={(e) => setRelationship(e.target.value)}
-            placeholder="Ví dụ: mới follow, chưa nhắn / đã chat 1 tuần / đã gặp một lần cà phê…"
+            placeholder={t('profile.relPh')}
             className={modeTextareaClass}
           />
         </div>
@@ -304,9 +308,9 @@ export const ProfileContextView: React.FC<ProfileContextViewProps> = ({ onToast 
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <label htmlFor="profile-visible" className={modeLabelClass}>
-              Bio / caption / ghi chú thêm
+              {t('profile.visibleLabel')}
             </label>
-            <span className="text-[11px] text-charcoal-muted font-mono">Tuỳ chọn nếu đã có link hoặc ảnh</span>
+            <span className="text-[11px] text-charcoal-muted font-mono">{t('profile.visibleHint')}</span>
           </div>
           <textarea
             id="profile-visible"
@@ -318,7 +322,7 @@ export const ProfileContextView: React.FC<ProfileContextViewProps> = ({ onToast 
               setCoachReply(null);
               setAnalyzedAt(null);
             }}
-            placeholder="Caption bạn thấy, hoặc ghi chú vibe — không bắt buộc nếu đã dán YouTube/Reddit hoặc ảnh."
+            placeholder={t('profile.visiblePh')}
             className={modeTextareaClass}
           />
         </div>
@@ -328,10 +332,10 @@ export const ProfileContextView: React.FC<ProfileContextViewProps> = ({ onToast 
             <label htmlFor="profile-shots" className={modeLabelClass}>
 
               <ImagePlus className="w-4 h-4 text-magenta-600" aria-hidden="true" />
-              Ảnh bài / story
+              {t('profile.shotsLabel')}
             </label>
             <span className="text-[11px] text-charcoal-muted font-mono">
-              Tối đa {MAX_SCREENSHOTS} · upload hoặc Ctrl+V · bấm ảnh để ghi caption
+              {t('profile.shotsHint', { n: MAX_SCREENSHOTS })}
             </span>
           </div>
           <input
@@ -353,20 +357,20 @@ export const ProfileContextView: React.FC<ProfileContextViewProps> = ({ onToast 
                     type="button"
                     onClick={() => setActiveShotId(shot.id)}
                     className="w-full h-full cursor-pointer"
-                    aria-label="Xem ảnh và thêm caption"
+                    aria-label={t('profile.viewShot')}
                   >
                     <img src={shot.previewUrl} alt="" className="w-full h-full object-cover" />
                   </button>
                   {(shot.caption || shot.comments) && (
                     <span className="absolute bottom-1.5 left-1.5 text-[10px] font-mono bg-paper-card/90 px-1.5 py-0.5 rounded-md border border-paper-border">
-                      Có ghi chú
+                      {t('profile.hasNotes')}
                     </span>
                   )}
                   <button
                     type="button"
                     onClick={() => removeShot(shot.id)}
                     className="absolute top-1.5 right-1.5 min-h-[32px] min-w-[32px] rounded-full bg-charcoal/80 text-white flex items-center justify-center hover:bg-charcoal cursor-pointer"
-                    aria-label="Gỡ ảnh"
+                    aria-label={t('ui.removeImage')}
                   >
                     <X className="w-3.5 h-3.5" aria-hidden="true" />
                   </button>
@@ -378,7 +382,7 @@ export const ProfileContextView: React.FC<ProfileContextViewProps> = ({ onToast 
 
         <div className="space-y-1.5">
           <label htmlFor="profile-question" className={modeLabelMutedClass}>
-            Bạn muốn coach điều gì?
+            {t('profile.qLabel')}
           </label>
           <input
             id="profile-question"
@@ -386,7 +390,7 @@ export const ProfileContextView: React.FC<ProfileContextViewProps> = ({ onToast 
             maxLength={2000}
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
-            placeholder="Cách mở lời lịch sự…"
+            placeholder={t('profile.qPh')}
             className={modeInputClass}
           />
         </div>
@@ -399,7 +403,7 @@ export const ProfileContextView: React.FC<ProfileContextViewProps> = ({ onToast 
           className={modePrimaryButtonClass}
         >
           <Sparkles className={`w-4 h-4 ${isGenerating ? 'animate-spin' : ''}`} aria-hidden="true" />
-          <span>{isGenerating ? 'Đang coach…' : 'Nhờ coach'}</span>
+          <span>{isGenerating ? t('profile.working') : t('profile.cta')}</span>
         </button>
 
         {errorMsg && (
@@ -415,15 +419,14 @@ export const ProfileContextView: React.FC<ProfileContextViewProps> = ({ onToast 
         <div className="flex items-start gap-2.5 bg-passion-50/70 rounded-xl p-3 border border-passion-200/80 text-xs text-passion-900">
           <Info className="w-4 h-4 text-passion-600 flex-shrink-0 mt-0.5" aria-hidden="true" />
           <p className="leading-relaxed">
-            Chỉ fetch YouTube Data API và Reddit public JSON. Không Instagram, không ghép đôi, không
-            lưu hồ sơ crush.
+            {t('profile.note')}
           </p>
         </div>
       </div>
 
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-2 flex-wrap text-xs text-charcoal-muted">
-          <span className="font-mono uppercase font-bold text-magenta-700">Cơ sở RAG:</span>
+          <span className="font-mono uppercase font-bold text-magenta-700">{t('common.rag')}:</span>
           {coachReply?.citations && coachReply.citations.length > 0 ? (
             coachReply.citations.slice(0, 3).map((cite, idx) => (
               <button
@@ -439,18 +442,18 @@ export const ProfileContextView: React.FC<ProfileContextViewProps> = ({ onToast 
           ) : (
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-paper-card border border-dashed border-paper-border text-charcoal-muted font-medium">
               <Shield className="w-3.5 h-3.5" aria-hidden="true" />
-              Hiện sau khi AI gen
+              {t('ui.citeSoon')}
             </span>
           )}
         </div>
         <AiStatusBadge
           status={coachReply && !coachReply.refused ? 'ready' : isGenerating ? 'loading' : 'idle'}
-          readyLabel="Coach từ ngữ cảnh"
+          readyLabel={t('profile.aiReady')}
         />
       </div>
 
       {isGenerating ? (
-        <CoachBubbleLoading label="Đang soạn gợi ý từ ngữ cảnh…" />
+        <CoachBubbleLoading label={t('profile.loading')} />
       ) : coachReply?.refused ? (
         <SafetyBanner message={coachReply.reply} />
       ) : coachReply ? (
@@ -458,10 +461,10 @@ export const ProfileContextView: React.FC<ProfileContextViewProps> = ({ onToast 
           <CoachBubble
             reply={coachReply}
             timestamp={analyzedAt}
-            subtitle="Cách tiếp cận từ ngữ cảnh"
+            subtitle={t('profile.bubbleSub')}
             onCitationClick={setActiveCitation}
             onCopyReply={(text) => {
-              navigator.clipboard.writeText(text).then(() => onToast('Đã sao chép nhận xét Coach!'));
+              navigator.clipboard.writeText(text).then(() => onToast(t('profile.copyReply')));
             }}
           />
           {coachReply?.improved_draft && (
@@ -469,10 +472,10 @@ export const ProfileContextView: React.FC<ProfileContextViewProps> = ({ onToast 
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-charcoal uppercase tracking-wider">
-                    Gợi ý Bio / Tin nhắn từ ngữ cảnh
+                    {t('profile.draftFromCtx')}
                   </span>
                   <span className="text-[11px] font-mono text-magenta-700 bg-magenta-50 px-2.5 py-0.5 rounded-full border border-magenta-200">
-                    Copy-ready
+                    {t('ui.copyReady')}
                   </span>
                 </div>
                 <p className="font-editorial text-base sm:text-lg text-charcoal italic leading-relaxed">
@@ -482,12 +485,12 @@ export const ProfileContextView: React.FC<ProfileContextViewProps> = ({ onToast 
               <button
                 type="button"
                 onClick={() => {
-                  navigator.clipboard.writeText(coachReply.improved_draft!).then(() => onToast('Đã sao chép gợi ý!'));
+                  navigator.clipboard.writeText(coachReply.improved_draft!).then(() => onToast(t('profile.copyHint')));
                 }}
                 className="inline-flex items-center justify-center gap-1.5 min-h-[44px] px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-magenta-600 hover:bg-magenta-700 text-white transition-all self-end cursor-pointer"
               >
                 <Copy className="w-3.5 h-3.5" aria-hidden="true" />
-                <span>Sao chép</span>
+                <span>{t('ui.copy')}</span>
               </button>
             </div>
           )}
@@ -501,10 +504,10 @@ export const ProfileContextView: React.FC<ProfileContextViewProps> = ({ onToast 
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-charcoal uppercase tracking-wider">
-                        Phương án 0{idx + 1}
+                        {t('ui.option', { n: idx + 1 })}
                       </span>
                       <span className="text-[11px] font-mono text-magenta-700 bg-magenta-50 px-2.5 py-0.5 rounded-full border border-magenta-200">
-                        Copy-ready
+                        {t('ui.copyReady')}
                       </span>
                     </div>
                     <p className="font-editorial text-base sm:text-lg text-charcoal italic leading-relaxed">
@@ -525,7 +528,7 @@ export const ProfileContextView: React.FC<ProfileContextViewProps> = ({ onToast 
                     ) : (
                       <Copy className="w-3.5 h-3.5" aria-hidden="true" />
                     )}
-                    <span>{copiedIndex === idx ? 'Đã chép' : 'Sao chép'}</span>
+                    <span>{copiedIndex === idx ? t('ui.copiedShort') : t('ui.copy')}</span>
                   </button>
                 </div>
               ))}
@@ -534,9 +537,9 @@ export const ProfileContextView: React.FC<ProfileContextViewProps> = ({ onToast 
         </div>
       ) : (
         <EmptyAiState
-          title="Chưa có coaching từ profile"
-          description="Dán link YouTube/Reddit, caption, hoặc Ctrl+V ảnh bài bạn đã thấy."
-          hint="Bấm từng ảnh để thêm caption và bình luận từ bài đó"
+          title={t('profile.emptyTitle')}
+          description={t('profile.emptyDesc')}
+          hint={t('profile.emptyHint')}
         />
       )}
 
@@ -546,10 +549,10 @@ export const ProfileContextView: React.FC<ProfileContextViewProps> = ({ onToast 
         </div>
         <div className="space-y-1">
           <span className="text-xs font-bold uppercase tracking-wider text-charcoal">
-            Phiên tạm thời
+            {t('profile.ephemeralTitle')}
           </span>
           <p className="text-xs text-charcoal-muted leading-relaxed max-w-xl">
-            Handle chưa được lưu thành hồ sơ. Làm mới phiên xóa đoạn dán và ảnh.
+            {t('profile.ephemeralBody')}
           </p>
         </div>
       </div>
@@ -564,25 +567,25 @@ export const ProfileContextView: React.FC<ProfileContextViewProps> = ({ onToast 
           <div className="bg-paper-card max-w-3xl w-full rounded-2xl p-5 sm:p-6 shadow-2xl border border-paper-border flex flex-col gap-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between gap-3">
               <h2 id="shot-modal-title" className="font-editorial text-xl text-charcoal">
-                Ảnh và ngữ cảnh bài viết
+                {t('profile.shotModalTitle')}
               </h2>
               <button
                 type="button"
                 onClick={() => setActiveShotId(null)}
                 className="min-h-[44px] min-w-[44px] rounded-xl text-charcoal-muted hover:text-charcoal hover:bg-paper-subtle flex items-center justify-center"
-                aria-label="Đóng"
+                aria-label={t('ui.close')}
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
             <img
               src={activeShot.previewUrl}
-              alt="Screenshot đã chọn"
+              alt={t('profile.shotAlt')}
               className="w-full max-h-[50vh] object-contain rounded-xl border border-paper-border bg-paper-subtle"
             />
             <div className="space-y-1.5">
               <label htmlFor="shot-caption" className="text-xs font-bold uppercase tracking-wider text-charcoal">
-                Caption của bài / story
+                {t('profile.captionLabel')}
               </label>
               <textarea
                 id="shot-caption"
@@ -590,13 +593,13 @@ export const ProfileContextView: React.FC<ProfileContextViewProps> = ({ onToast 
                 maxLength={2000}
                 value={activeShot.caption}
                 onChange={(e) => patchShot(activeShot.id, { caption: e.target.value })}
-                placeholder="Dán caption đi kèm ảnh này…"
+                placeholder={t('profile.captionPh')}
                 className="w-full bg-paper-subtle text-sm p-3 rounded-xl border border-paper-border outline-none focus:ring-2 focus:ring-magenta-500/20"
               />
             </div>
             <div className="space-y-1.5">
               <label htmlFor="shot-comments" className="text-xs font-bold uppercase tracking-wider text-charcoal">
-                Bình luận nổi bật trên bài
+                {t('profile.commentsLabel')}
               </label>
               <textarea
                 id="shot-comments"
@@ -604,7 +607,7 @@ export const ProfileContextView: React.FC<ProfileContextViewProps> = ({ onToast 
                 maxLength={4000}
                 value={activeShot.comments}
                 onChange={(e) => patchShot(activeShot.id, { comments: e.target.value })}
-                placeholder="Dán vài comment bạn thấy liên quan…"
+                placeholder={t('profile.commentsPh')}
                 className="w-full bg-paper-subtle text-sm p-3 rounded-xl border border-paper-border outline-none focus:ring-2 focus:ring-magenta-500/20"
               />
             </div>
@@ -613,7 +616,7 @@ export const ProfileContextView: React.FC<ProfileContextViewProps> = ({ onToast 
               onClick={() => setActiveShotId(null)}
               className="min-h-[44px] bg-magenta-600 hover:bg-magenta-700 text-white rounded-xl text-sm font-semibold"
             >
-              Xong, giữ ghi chú này
+              {t('profile.shotDone')}
             </button>
           </div>
         </div>

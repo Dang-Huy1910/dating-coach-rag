@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Citation, CoachReply } from '../api/types';
+import { useI18n } from '../i18n/LocaleContext';
 import { CoachMarkdown } from './CoachMarkdown';
 import { SafetyBanner } from './SafetyBanner';
 import {
@@ -44,12 +45,14 @@ function extractCleanReply(text: string): string {
 export const CoachBubble: React.FC<CoachBubbleProps> = ({
   reply,
   timestamp,
-  subtitle = 'Phân tích & gợi ý từ Coach AI',
+  subtitle,
   onCitationClick,
   onCopyReply,
   showFeedback = true,
   children,
 }) => {
+  const { t } = useI18n();
+  const resolvedSubtitle = subtitle ?? t('ui.coachSub');
   const [feedback, setFeedback] = useState<'up' | 'down' | null>(null);
   const [copied, setCopied] = useState(false);
   const cleanReply = extractCleanReply(reply?.reply || '');
@@ -85,14 +88,14 @@ export const CoachBubble: React.FC<CoachBubbleProps> = ({
                 <span className="text-[11px] font-mono text-charcoal-muted">{timestamp}</span>
               ) : null}
             </div>
-            <p className="text-[11px] text-charcoal-muted truncate">{subtitle}</p>
+            <p className="text-[11px] text-charcoal-muted truncate">{resolvedSubtitle}</p>
           </div>
         </div>
 
         {reply?.citations && reply.citations.length > 0 ? (
           <div className="pl-1 space-y-1.5">
             <p className="text-[11px] font-mono uppercase tracking-wider text-magenta-700/90">
-              Neo từ thư viện kiến thức
+              {t('bubble.citeFromLib')}
             </p>
             <div className="flex flex-wrap items-center gap-2">
               {reply.citations.map((cite, idx) => (
@@ -117,12 +120,12 @@ export const CoachBubble: React.FC<CoachBubbleProps> = ({
           </div>
         ) : reply && !reply.refused && reply.hedged ? (
           <p className="pl-1 text-[11px] text-charcoal-muted/90 leading-relaxed">
-            Thư viện chưa đủ mạnh — câu trả lời được đánh dấu thận trọng, không bịa nguồn.
+            {t('bubble.hedge')}
           </p>
         ) : null}
 
         {reply?.refused ? (
-          <SafetyBanner message={cleanReply || 'Yêu cầu này không thể hỗ trợ.'} />
+          <SafetyBanner message={cleanReply || t('bubble.refused')} />
         ) : (
           <div className="pl-1 rounded-xl bg-gradient-to-br from-magenta-50/30 via-transparent to-paper-subtle/40 -mx-1 px-3 py-3 sm:px-4 sm:py-3.5 border border-transparent">
             <CoachMarkdown content={cleanReply || ''} />
@@ -151,7 +154,7 @@ export const CoachBubble: React.FC<CoachBubbleProps> = ({
                 className={`min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-lg hover:bg-paper-card transition-colors ${
                   feedback === 'up' ? 'text-magenta-600' : 'text-charcoal-faint'
                 }`}
-                title="Hữu ích"
+                title={t('bubble.helpful')}
                 aria-pressed={feedback === 'up'}
               >
                 <ThumbsUp className="w-3.5 h-3.5" />
@@ -162,7 +165,7 @@ export const CoachBubble: React.FC<CoachBubbleProps> = ({
                 className={`min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-lg hover:bg-paper-card transition-colors ${
                   feedback === 'down' ? 'text-passion-600' : 'text-charcoal-faint'
                 }`}
-                title="Chưa chuẩn xác"
+                title={t('bubble.notAccurate')}
                 aria-pressed={feedback === 'down'}
               >
                 <ThumbsDown className="w-3.5 h-3.5" />
@@ -175,7 +178,7 @@ export const CoachBubble: React.FC<CoachBubbleProps> = ({
             className={`min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-lg hover:bg-paper-card transition-colors ${
               copied ? 'text-magenta-600' : 'text-charcoal-faint hover:text-magenta-600'
             }`}
-            title="Sao chép câu trả lời"
+            title={t('bubble.copyReply')}
           >
             {copied ? (
               <Check className="w-3.5 h-3.5" aria-hidden="true" />
@@ -189,9 +192,10 @@ export const CoachBubble: React.FC<CoachBubbleProps> = ({
   );
 };
 
-export const CoachBubbleLoading: React.FC<{ label?: string }> = ({
-  label = 'Đang soạn…',
-}) => (
+export const CoachBubbleLoading: React.FC<{ label?: string }> = ({ label }) => {
+  const { t } = useI18n();
+  const resolvedLabel = label ?? t('bubble.loading');
+  return (
   <div className="bg-paper-card rounded-2xl rounded-tl-none p-6 sm:p-7 shadow-sm border border-paper-border space-y-4">
     <div className="flex items-center gap-2.5">
       <div className="w-9 h-9 rounded-full bg-magenta-50 border border-magenta-200 flex items-center justify-center text-magenta-600">
@@ -199,7 +203,7 @@ export const CoachBubbleLoading: React.FC<{ label?: string }> = ({
       </div>
       <div>
         <p className="text-xs font-bold text-charcoal">Coach</p>
-        <p className="text-[11px] text-charcoal-muted font-mono">{label}</p>
+        <p className="text-[11px] text-charcoal-muted font-mono">{resolvedLabel}</p>
       </div>
     </div>
     <div className="space-y-2.5" role="status">
@@ -208,4 +212,5 @@ export const CoachBubbleLoading: React.FC<{ label?: string }> = ({
       <div className="h-3 w-4/5 rounded-full bg-paper-border/60 animate-pulse" />
     </div>
   </div>
-);
+  );
+};

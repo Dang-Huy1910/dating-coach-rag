@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useSession } from '../context/SessionContext';
-import { useI18n } from '../i18n/LocaleContext';
+import { isCatalogSample, useI18n } from '../i18n/LocaleContext';
 import { api, ApiError } from '../api/client';
 import { Citation, CoachReply } from '../api/types';
 import { AiStatusBadge } from '../components/AiStatusBadge';
@@ -26,7 +26,10 @@ interface BioStudioViewProps {
 }
 
 function pointIcon(index: number, text: string) {
-  const positive = /(thêm|giữ|nên có|mời|hook|cụ thể hóa|làm rõ)/i.test(text) || index === 2;
+  const positive =
+    /(thêm|giữ|nên có|mời|hook|cụ thể hóa|làm rõ|add|keep|invite|specify|clarify|include)/i.test(
+      text,
+    ) || index === 2;
   if (positive) {
     return <PlusCircle className="w-4 h-4 text-magenta-600 flex-shrink-0 mt-0.5" aria-hidden="true" />;
   }
@@ -35,10 +38,8 @@ function pointIcon(index: number, text: string) {
 
 export const BioStudioView: React.FC<BioStudioViewProps> = ({ onToast }) => {
   const { executeWithSession, kit, refreshKit } = useSession();
-  const { t } = useI18n();
-  const [draft, setDraft] = useState<string>(
-    'Yêu cuộc sống. Thích du lịch, cà phê và nói chuyện sâu sắc. Tìm người cùng tần số.',
-  );
+  const { locale, t } = useI18n();
+  const [draft, setDraft] = useState<string>(() => t('bio.sample'));
   const [isRefining, setIsRefining] = useState<boolean>(false);
   const [coachReply, setCoachReply] = useState<CoachReply | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -61,7 +62,7 @@ export const BioStudioView: React.FC<BioStudioViewProps> = ({ onToast }) => {
     setHydratedKey(key);
     setDraft(bio);
     setCoachReply({
-      reply: 'Đã điền từ phiên coach — bạn có thể chỉnh và nhờ coach sửa lại.',
+      reply: t('bio.kitFill'),
       citations: [],
       refused: false,
       hedged: false,
@@ -72,7 +73,13 @@ export const BioStudioView: React.FC<BioStudioViewProps> = ({ onToast }) => {
     });
     setFromKit(true);
     setAnalyzedAt(null);
-  }, [kit, hydratedKey]);
+  }, [kit, hydratedKey, t]);
+
+  useEffect(() => {
+    if (!fromKit && isCatalogSample('bio.sample', draft)) {
+      setDraft(t('bio.sample'));
+    }
+  }, [locale, t]);
 
   const hasResult = Boolean(coachReply && !coachReply.refused);
   const analysisPoints = coachReply?.analysis_points?.filter(Boolean) ?? [];
@@ -81,7 +88,7 @@ export const BioStudioView: React.FC<BioStudioViewProps> = ({ onToast }) => {
 
   const handleRefine = async () => {
     if (!draft.trim()) {
-      setErrorMsg('Vui lòng nhập bio nháp trước khi yêu cầu Coach sửa.');
+      setErrorMsg(t('bio.needDraft'));
       return;
     }
 
@@ -101,7 +108,7 @@ export const BioStudioView: React.FC<BioStudioViewProps> = ({ onToast }) => {
       const now = new Date();
       setAnalyzedAt(`${now.getHours()}:${now.getMinutes().toString().padStart(2, '0')}`);
     } catch (err: unknown) {
-      const msg = err instanceof ApiError ? err.detail : 'Không thể gửi bio tới Coach.';
+      const msg = err instanceof ApiError ? err.detail : t('bio.fail');
       setErrorMsg(msg);
     } finally {
       setIsRefining(false);
@@ -110,12 +117,12 @@ export const BioStudioView: React.FC<BioStudioViewProps> = ({ onToast }) => {
 
   const handleCopy = () => {
     if (!currentSuggestion) {
-      onToast('Chưa có bản sửa AI để sao chép — hãy nhờ coach sửa trước.');
+      onToast(t('bio.copyNeed'));
       return;
     }
     navigator.clipboard.writeText(currentSuggestion).then(() => {
       setCopied(true);
-      onToast('Đã sao chép bản sửa vào khay nhớ tạm!');
+      onToast(t('bio.copied'));
       setTimeout(() => setCopied(false), 2000);
     });
   };
@@ -129,7 +136,7 @@ export const BioStudioView: React.FC<BioStudioViewProps> = ({ onToast }) => {
         aside={
           <div className="inline-flex items-center gap-2 bg-paper-card px-3.5 py-1.5 rounded-full border border-paper-border shadow-xs text-xs font-mono text-charcoal">
             <History className="w-3.5 h-3.5 text-magenta-600" aria-hidden="true" />
-            <span>RAG · Dating profile</span>
+            <span>{t('bio.ragBadge')}</span>
           </div>
         }
       />
@@ -143,10 +150,10 @@ export const BioStudioView: React.FC<BioStudioViewProps> = ({ onToast }) => {
                 className={modeLabelClass}
               >
                 <Edit3 className="w-4 h-4 text-magenta-600" aria-hidden="true" />
-                <span>Bio / Profile nháp của bạn</span>
+                <span>{t('bio.draftLabel')}</span>
               </label>
               <span className="text-[11px] font-mono bg-paper-subtle text-charcoal-muted px-2.5 py-0.5 rounded-full border border-paper-border">
-                {draft.length} ký tự
+                {t('common.chars', { n: draft.length })}
               </span>
             </div>
 
@@ -160,13 +167,13 @@ export const BioStudioView: React.FC<BioStudioViewProps> = ({ onToast }) => {
                 setAnalyzedAt(null);
                 setFromKit(false);
               }}
-              placeholder="Nhập bio hiện tại của bạn trên Tinder, Bumble hoặc Hinge..."
+              placeholder={t('bio.draftPh')}
               className="w-full bg-paper-subtle text-charcoal text-sm p-4 rounded-xl resize-none outline-none focus:bg-paper-card focus:ring-2 focus:ring-magenta-500/20 focus:border-magenta-500 transition-all border border-paper-border leading-relaxed"
             />
 
             {fromKit && (
               <div className="text-xs text-magenta-800 bg-magenta-50 p-2.5 rounded-lg border border-magenta-200">
-                Đã điền từ phiên coach
+                {t('common.fromKit')}
               </div>
             )}
 
@@ -183,9 +190,7 @@ export const BioStudioView: React.FC<BioStudioViewProps> = ({ onToast }) => {
               <div className="flex items-center gap-1.5 text-xs text-charcoal-muted">
                 <Flame className="w-4 h-4 text-passion-500" aria-hidden="true" />
                 <span>
-                  {hasAiAnalysis
-                    ? 'Đánh giá bên phải do Coach AI gen từ bio này.'
-                    : 'Chưa có đánh giá AI — nhấn nhờ coach sửa.'}
+                  {hasAiAnalysis ? t('bio.hintReady') : t('bio.hintIdle')}
                 </span>
               </div>
 
@@ -200,7 +205,7 @@ export const BioStudioView: React.FC<BioStudioViewProps> = ({ onToast }) => {
                   className={`w-4 h-4 ${isRefining ? 'animate-spin' : ''}`}
                   aria-hidden="true"
                 />
-                <span>{isRefining ? 'Đang phân tích...' : 'Nhờ coach sửa'}</span>
+                <span>{isRefining ? t('bio.working') : t('bio.cta')}</span>
               </button>
             </div>
           </div>
@@ -211,11 +216,10 @@ export const BioStudioView: React.FC<BioStudioViewProps> = ({ onToast }) => {
             </div>
             <div className="space-y-1">
               <span className="text-xs font-bold text-charcoal uppercase tracking-wider">
-                Gợi ý từ phòng lab
+                {t('bio.labTitle')}
               </span>
               <p className="text-xs text-charcoal-muted leading-relaxed">
-                Bio cụ thể (thói quen, chỗ quen, một khoảnh khắc nhỏ) dễ mời trả lời hơn khẩu hiệu
-                chung như “yêu cuộc sống”.
+                {t('bio.labBody')}
               </p>
             </div>
           </div>
@@ -237,12 +241,12 @@ export const BioStudioView: React.FC<BioStudioViewProps> = ({ onToast }) => {
                     id="bio-coach-heading"
                     className="font-editorial text-xl sm:text-2xl font-normal text-charcoal"
                   >
-                    Đánh giá & Phân tích của Coach
+                    {t('bio.reviewTitle')}
                   </h2>
                   <p className="text-xs text-charcoal-muted">
                     {hasAiAnalysis
-                      ? `Phân tích AI${analyzedAt ? ` • ${analyzedAt}` : ''}`
-                      : 'Chờ Coach AI — không dùng checklist cứng'}
+                      ? `${t('bio.reviewReady')}${analyzedAt ? ` • ${analyzedAt}` : ''}`
+                      : t('bio.reviewIdle')}
                   </p>
                 </div>
               </div>
@@ -254,13 +258,13 @@ export const BioStudioView: React.FC<BioStudioViewProps> = ({ onToast }) => {
             {coachReply?.refused ? (
               <SafetyBanner message={coachReply.reply} />
             ) : isRefining ? (
-              <CoachBubbleLoading label="Đang gen đánh giá từ bio…" />
+              <CoachBubbleLoading label={t('bio.loading')} />
             ) : hasResult && hasAiAnalysis && coachReply ? (
               <div className="space-y-4">
                 {analysisPoints.length > 0 && (
                   <div className="bg-paper-subtle p-5 rounded-xl border border-paper-border/80 space-y-3">
                     <div className="text-xs font-bold uppercase tracking-wider text-charcoal flex items-center gap-1.5">
-                      <span>Những điểm Coach AI nhận xét trên bản nháp:</span>
+                      <span>{t('bio.pointsLabel')}</span>
                     </div>
                     <ul className="space-y-2.5">
                       {analysisPoints.map((point, idx) => (
@@ -279,42 +283,42 @@ export const BioStudioView: React.FC<BioStudioViewProps> = ({ onToast }) => {
                 <CoachBubble
                   reply={coachReply}
                   timestamp={analyzedAt}
-                  subtitle="Đánh giá bio / profile"
+                  subtitle={t('bio.bubbleSub')}
                   onCitationClick={setActiveCitation}
                   onCopyReply={(text) => {
                     navigator.clipboard.writeText(text).then(() => {
                       setCopiedReply(true);
-                      onToast('Đã sao chép nhận xét Coach!');
+                      onToast(t('bio.copyReply'));
                       setTimeout(() => setCopiedReply(false), 2000);
                     });
                   }}
                 />
-                {copiedReply && <span className="sr-only">Đã sao chép</span>}
+                {copiedReply && <span className="sr-only">{t('ui.copiedSr')}</span>}
               </div>
             ) : (
               <EmptyAiState
-                title="Chưa có đánh giá & phân tích từ AI"
-                description="Sau khi nhấn “Nhờ coach sửa”, phần này sẽ hiện bullets và nhận xét do Coach AI gen từ đúng bio bạn nhập."
-                hint="Bước tiếp theo → nút nhờ coach sửa bên trái"
+                title={t('bio.emptyTitle')}
+                description={t('bio.emptyDesc')}
+                hint={t('bio.emptyHint')}
               />
             )}
           </section>
 
           <CopyReadyCard
-            title="Bản sửa gợi ý (Copy-Ready)"
+            title={t('bio.rewriteTitle')}
             content={currentSuggestion}
             isLoading={isRefining}
-            emptyText="Bản bio viết lại sẽ hiện ở box riêng này sau khi Coach AI trả lời."
+            emptyText={t('bio.rewriteEmpty')}
             onCopy={handleCopy}
             copied={copied}
-            footerHint="Tách riêng khỏi phần đánh giá phía trên • Copy khi sẵn sàng"
+            footerHint={t('bio.rewriteHint')}
           />
 
           {hasResult && coachReply?.citations && coachReply.citations.length > 0 && (
             <div className="bg-paper-card rounded-2xl p-5 border border-paper-border space-y-2">
               <div className="text-xs font-bold text-charcoal-muted uppercase tracking-wider flex items-center gap-1.5">
                 <Bookmark className="w-3.5 h-3.5 text-magenta-600" aria-hidden="true" />
-                <span>Cơ sở RAG</span>
+                <span>{t('common.rag')}</span>
               </div>
               <div className="flex flex-wrap gap-2">
                 {coachReply.citations.map((cite, idx) => (

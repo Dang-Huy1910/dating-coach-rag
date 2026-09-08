@@ -1,4 +1,5 @@
 import React from 'react';
+import { tStatic } from '../i18n/LocaleContext';
 
 interface Props {
   children: React.ReactNode;
@@ -26,7 +27,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
       return (
         <div className="rounded-2xl border border-passion-200 bg-passion-50 p-6 space-y-3" role="alert">
           <p className="text-sm font-semibold text-passion-800">
-            Màn {this.props.label || 'này'} gặp lỗi hiển thị
+            {tStatic('error.viewCrash', { label: this.props.label || tStatic('error.viewCrashThis') })}
           </p>
           <p className="text-xs text-passion-700 font-mono break-all">{this.state.message}</p>
           <button
@@ -34,7 +35,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
             className="min-h-[44px] px-4 rounded-xl bg-magenta-600 text-white text-xs font-semibold"
             onClick={() => this.setState({ hasError: false, message: '' })}
           >
-            Thử render lại
+            {tStatic('error.rerender')}
           </button>
         </div>
       );

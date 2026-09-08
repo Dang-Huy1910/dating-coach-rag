@@ -1,5 +1,6 @@
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
+import { useI18n } from '../i18n/LocaleContext';
 
 interface CoachMarkdownProps {
   content: string;
@@ -14,9 +15,10 @@ export const CoachMarkdown: React.FC<CoachMarkdownProps> = ({
   content,
   className = '',
 }) => {
+  const { t } = useI18n();
   const text = (content || '').trim();
   if (!text) {
-    return <p className="text-sm text-charcoal-muted">Coach chưa trả nội dung.</p>;
+    return <p className="text-sm text-charcoal-muted">{t('error.coachEmpty')}</p>;
   }
 
   return (

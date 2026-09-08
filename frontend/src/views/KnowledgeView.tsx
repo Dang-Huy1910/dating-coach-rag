@@ -47,7 +47,7 @@ export const KnowledgeView: React.FC<KnowledgeViewProps> = ({ onToast }) => {
 
   useEffect(() => {
     refresh().catch((err: unknown) => {
-      const msg = err instanceof ApiError ? err.detail : 'Không tải được thư viện.';
+      const msg = err instanceof ApiError ? err.detail : t('library.failLoad');
       setErrorMsg(msg);
     });
   }, [refresh]);
@@ -59,11 +59,11 @@ export const KnowledgeView: React.FC<KnowledgeViewProps> = ({ onToast }) => {
     try {
       for (const file of Array.from(fileList)) {
         const result = await api.uploadKnowledge(file);
-        onToast(`Đã thêm “${result.source.title}” · ${result.chunk_count} chunks`);
+        onToast(t('library.added', { title: result.source.title, n: result.chunk_count }));
       }
       await refresh();
     } catch (err: unknown) {
-      setErrorMsg(err instanceof ApiError ? err.detail : 'Upload thất bại.');
+      setErrorMsg(err instanceof ApiError ? err.detail : t('library.failUpload'));
     } finally {
       setBusy(false);
     }
@@ -71,15 +71,15 @@ export const KnowledgeView: React.FC<KnowledgeViewProps> = ({ onToast }) => {
 
   const onDelete = async (source: KnowledgeSourceInfo) => {
     if (source.kind !== 'upload') return;
-    if (!window.confirm(`Xóa tài liệu upload “${source.title}” khỏi RAG?`)) return;
+    if (!window.confirm(t('library.deleteConfirm', { title: source.title }))) return;
     setBusy(true);
     setErrorMsg(null);
     try {
       await api.deleteKnowledge(source.source_id);
-      onToast('Đã xóa upload và dựng lại index.');
+      onToast(t('library.deleted'));
       await refresh();
     } catch (err: unknown) {
-      setErrorMsg(err instanceof ApiError ? err.detail : 'Không xóa được.');
+      setErrorMsg(err instanceof ApiError ? err.detail : t('library.failDelete'));
     } finally {
       setBusy(false);
     }
@@ -90,10 +90,10 @@ export const KnowledgeView: React.FC<KnowledgeViewProps> = ({ onToast }) => {
     setErrorMsg(null);
     try {
       const result = await api.reindexKnowledge();
-      onToast(`Reindex xong · ${result.chunk_count} chunks`);
+      onToast(t('library.reindexed', { n: result.chunk_count }));
       await refresh();
     } catch (err: unknown) {
-      setErrorMsg(err instanceof ApiError ? err.detail : 'Reindex thất bại.');
+      setErrorMsg(err instanceof ApiError ? err.detail : t('library.failReindex'));
     } finally {
       setBusy(false);
     }
@@ -112,8 +112,8 @@ export const KnowledgeView: React.FC<KnowledgeViewProps> = ({ onToast }) => {
           <div className="inline-flex items-center gap-2 bg-paper-card px-3.5 py-1.5 rounded-full border border-paper-border shadow-xs text-xs font-mono text-charcoal">
             <Library className="w-3.5 h-3.5 text-magenta-600" aria-hidden="true" />
             <span>
-              {indexReady ? 'Index sẵn sàng' : 'Index chưa sẵn'}
-              {chunkCount != null ? ` · ${chunkCount} chunks` : ''}
+              {indexReady ? t('library.indexReady') : t('library.indexPending')}
+              {chunkCount != null ? ` · ${t('library.chunks', { n: chunkCount })}` : ''}
             </span>
           </div>
         }
@@ -122,7 +122,7 @@ export const KnowledgeView: React.FC<KnowledgeViewProps> = ({ onToast }) => {
       <div className={`${modeCardClass} space-y-5`}>
         <div className="space-y-2">
           <p className="text-xs font-bold uppercase tracking-wider text-charcoal">
-            Định dạng được hỗ trợ
+            {t('library.formats')}
           </p>
           <div className="flex flex-wrap gap-2">
             {formats.map((fmt) => (
@@ -137,15 +137,14 @@ export const KnowledgeView: React.FC<KnowledgeViewProps> = ({ onToast }) => {
             ))}
           </div>
           <p className="text-[11px] text-charcoal-muted leading-relaxed">
-            Tối đa 5MB / file. PDF cần có lớp chữ (chưa OCR ảnh scan). Upload không ghi đè bộ
-            curated 01–07.
+            {t('library.limits')}
           </p>
         </div>
 
         <label className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-magenta-300 bg-magenta-50/40 px-6 py-10 cursor-pointer hover:bg-magenta-50/70 transition-colors">
           <FileUp className="w-8 h-8 text-magenta-600" aria-hidden="true" />
           <span className="text-sm font-semibold text-charcoal">
-            Chọn hoặc kéo thả tài liệu để thêm vào RAG
+            {t('library.drop')}
           </span>
           <span className="text-[11px] text-charcoal-muted font-mono">
             .md · .txt · .pdf · .docx · .html · .csv
@@ -171,7 +170,7 @@ export const KnowledgeView: React.FC<KnowledgeViewProps> = ({ onToast }) => {
             className={modePrimaryButtonClass + ' sm:w-auto sm:px-5'}
           >
             <RefreshCw className={`w-4 h-4 ${busy ? 'animate-spin' : ''}`} aria-hidden="true" />
-            <span>Dựng lại index</span>
+            <span>{t('library.reindex')}</span>
           </button>
         </div>
 
@@ -187,7 +186,7 @@ export const KnowledgeView: React.FC<KnowledgeViewProps> = ({ onToast }) => {
       </div>
 
       <section className={`${modeCardClass} space-y-4`}>
-        <h2 className="font-editorial text-2xl text-charcoal">Tài liệu curated</h2>
+        <h2 className="font-editorial text-2xl text-charcoal">{t('library.curated')}</h2>
         <ul className="space-y-2">
           {curated.map((source) => (
             <li
@@ -207,9 +206,9 @@ export const KnowledgeView: React.FC<KnowledgeViewProps> = ({ onToast }) => {
       </section>
 
       <section className={`${modeCardClass} space-y-4`}>
-        <h2 className="font-editorial text-2xl text-charcoal">Tài liệu bạn tải lên</h2>
+        <h2 className="font-editorial text-2xl text-charcoal">{t('library.uploads')}</h2>
         {uploaded.length === 0 ? (
-          <p className="text-sm text-charcoal-muted">Chưa có upload. Thêm file ở khung phía trên.</p>
+          <p className="text-sm text-charcoal-muted">{t('library.noUploads')}</p>
         ) : (
           <ul className="space-y-2">
             {uploaded.map((source) => (
@@ -235,7 +234,7 @@ export const KnowledgeView: React.FC<KnowledgeViewProps> = ({ onToast }) => {
                     onClick={() => void onDelete(source)}
                     disabled={busy}
                     className="min-h-[40px] min-w-[40px] inline-flex items-center justify-center rounded-xl border border-passion-200 text-passion-700 hover:bg-passion-50 cursor-pointer disabled:opacity-50"
-                    aria-label={`Xóa ${source.title}`}
+                    aria-label={t('library.deleteAria', { title: source.title })}
                   >
                     <Trash2 className="w-4 h-4" aria-hidden="true" />
                   </button>

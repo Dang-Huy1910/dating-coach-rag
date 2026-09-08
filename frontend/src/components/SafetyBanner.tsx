@@ -1,11 +1,13 @@
 import React from 'react';
 import { ShieldAlert } from 'lucide-react';
+import { useI18n } from '../i18n/LocaleContext';
 
 interface SafetyBannerProps {
   message?: string;
 }
 
 export const SafetyBanner: React.FC<SafetyBannerProps> = ({ message }) => {
+  const { t } = useI18n();
   return (
     <div
       className="rounded-2xl border border-passion-200/90 bg-passion-50/80 p-4 flex items-start gap-3.5"
@@ -16,15 +18,13 @@ export const SafetyBanner: React.FC<SafetyBannerProps> = ({ message }) => {
       </div>
       <div className="min-w-0 space-y-1">
         <p className="text-sm font-semibold text-passion-900">
-          Coach từ chối — giữ ranh giới an toàn
+          {t('safety.title')}
         </p>
         <p className="text-xs text-charcoal-muted leading-relaxed">
-          {message ||
-            'Yêu cầu này đụng matchmaking người thật, companion nhạy cảm, trị liệu, hoặc scrape profile — coach không làm.'}
+          {message || t('safety.default')}
         </p>
         <p className="text-[11px] text-charcoal-muted/80 leading-relaxed">
-          Đây là gate có chủ đích (không phải lỗi mạng). Bạn vẫn có thể hỏi bio, opener, hoặc dán
-          caption công khai để được coach giao tiếp.
+          {t('safety.gate')}
         </p>
       </div>
     </div>

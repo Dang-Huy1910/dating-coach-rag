@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { api, ApiError } from '../api/client';
 import { ChatTurn, SessionKitResponse, SessionResponse } from '../api/types';
+import { tStatic } from '../i18n/LocaleContext';
 
 const EMPTY_KIT: SessionKitResponse = {
   improved_bio: null,
@@ -36,7 +37,7 @@ interface SessionContextType {
   clearError: () => void;
 }
 
-const DEFAULT_DISCLAIMER = 'Đây không phải liệu pháp tâm lý và không ghép đôi người thật.';
+const DEFAULT_DISCLAIMER = tStatic('session.disclaimerDefault');
 
 const SessionContext = createContext<SessionContextType | undefined>(undefined);
 
@@ -102,7 +103,7 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
       await refreshKit(newSession.id);
       return newSession;
     } catch (err: unknown) {
-      const message = err instanceof ApiError ? err.detail : 'Không thể khởi tạo phiên tư vấn.';
+      const message = err instanceof ApiError ? err.detail : tStatic('error.sessionInit');
       setError(message);
       setKit(EMPTY_KIT);
       setChatTurns([]);

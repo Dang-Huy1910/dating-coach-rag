@@ -74,11 +74,11 @@ export const CoachBubble: React.FC<CoachBubbleProps> = ({
 
   return (
     <div className="flex flex-col gap-2 max-w-full">
-      <div className="bg-paper-card rounded-3xl rounded-tl-none p-5 sm:p-7 shadow-card-elevated border border-paper-border relative overflow-hidden space-y-4">
+      <div className="bg-paper-card rounded-2xl rounded-tl-none p-5 sm:p-6 shadow-sm border border-paper-border relative overflow-hidden space-y-4">
         <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-passion" aria-hidden="true" />
 
         <div className="flex items-center gap-2.5 pl-1 min-w-0">
-          <div className="w-9 h-9 rounded-2xl bg-magenta-50 border border-magenta-200 flex items-center justify-center text-magenta-600 shrink-0 shadow-soft">
+          <div className="w-9 h-9 rounded-full bg-magenta-50 border border-magenta-200 flex items-center justify-center text-magenta-600 shrink-0">
             <Sparkles className="w-4 h-4" aria-hidden="true" />
           </div>
           <div className="min-w-0">
@@ -88,13 +88,13 @@ export const CoachBubble: React.FC<CoachBubbleProps> = ({
                 <span className="text-[11px] font-mono text-charcoal-muted">{timestamp}</span>
               ) : null}
             </div>
-            <p className="text-[11px] text-charcoal-muted truncate font-mono">{resolvedSubtitle}</p>
+            <p className="text-[11px] text-charcoal-muted truncate">{resolvedSubtitle}</p>
           </div>
         </div>
 
         {reply?.citations && reply.citations.length > 0 ? (
           <div className="pl-1 space-y-1.5">
-            <p className="text-[11px] font-mono uppercase tracking-wider text-magenta-700/90 font-bold">
+            <p className="text-[11px] font-mono uppercase tracking-wider text-magenta-700/90">
               {t('bubble.citeFromLib')}
             </p>
             <div className="flex flex-wrap items-center gap-2">
@@ -103,7 +103,7 @@ export const CoachBubble: React.FC<CoachBubbleProps> = ({
                   key={`${cite.source_id}-${idx}`}
                   type="button"
                   onClick={() => onCitationClick?.(cite)}
-                  className="group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-magenta-50 border border-magenta-200 hover:border-magenta-400 hover:bg-magenta-100 text-xs font-medium text-charcoal transition-all cursor-pointer shadow-soft"
+                  className="group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-magenta-50/80 border border-magenta-200/90 hover:border-magenta-400 hover:bg-magenta-100 text-xs font-medium text-charcoal transition-all cursor-pointer shadow-xs"
                 >
                   <BookOpen className="w-3.5 h-3.5 text-magenta-600" aria-hidden="true" />
                   <span>
@@ -196,21 +196,21 @@ export const CoachBubbleLoading: React.FC<{ label?: string }> = ({ label }) => {
   const { t } = useI18n();
   const resolvedLabel = label ?? t('bubble.loading');
   return (
-    <div className="bg-paper-card rounded-3xl rounded-tl-none p-6 sm:p-7 shadow-card-elevated border border-paper-border space-y-4">
-      <div className="flex items-center gap-2.5">
-        <div className="w-9 h-9 rounded-2xl bg-magenta-50 border border-magenta-200 flex items-center justify-center text-magenta-600 shadow-soft">
-          <Sparkles className="w-4 h-4 animate-spin" aria-hidden="true" />
-        </div>
-        <div>
-          <p className="text-xs font-bold text-charcoal">Coach</p>
-          <p className="text-[11px] text-charcoal-muted font-mono">{resolvedLabel}</p>
-        </div>
+  <div className="bg-paper-card rounded-2xl rounded-tl-none p-6 sm:p-7 shadow-sm border border-paper-border space-y-4">
+    <div className="flex items-center gap-2.5">
+      <div className="w-9 h-9 rounded-full bg-magenta-50 border border-magenta-200 flex items-center justify-center text-magenta-600">
+        <Sparkles className="w-4 h-4 animate-spin" aria-hidden="true" />
       </div>
-      <div className="space-y-2.5" role="status">
-        <div className="h-3 w-full rounded-full bg-paper-border/80 animate-pulse" />
-        <div className="h-3 w-[90%] rounded-full bg-paper-border/70 animate-pulse" />
-        <div className="h-3 w-4/5 rounded-full bg-paper-border/60 animate-pulse" />
+      <div>
+        <p className="text-xs font-bold text-charcoal">Coach</p>
+        <p className="text-[11px] text-charcoal-muted font-mono">{resolvedLabel}</p>
       </div>
     </div>
+    <div className="space-y-2.5" role="status">
+      <div className="h-3 w-full rounded-full bg-paper-border/80 animate-pulse" />
+      <div className="h-3 w-[90%] rounded-full bg-paper-border/70 animate-pulse" />
+      <div className="h-3 w-4/5 rounded-full bg-paper-border/60 animate-pulse" />
+    </div>
+  </div>
   );
 };

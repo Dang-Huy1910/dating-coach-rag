@@ -22,11 +22,7 @@ export const ModePage: React.FC<ModePageProps> = ({
   <div
     className={cn(
       'w-full mx-auto space-y-8 pb-16',
-      width === 'wide'
-        ? 'max-w-7xl 2xl:max-w-[1440px]'
-        : width === 'chat'
-          ? 'max-w-4xl 2xl:max-w-5xl'
-          : 'max-w-5xl 2xl:max-w-6xl',
+      width === 'wide' ? 'max-w-6xl' : width === 'chat' ? 'max-w-4xl' : 'max-w-5xl',
       className,
     )}
   >
@@ -48,7 +44,7 @@ export const ModeHeader: React.FC<ModeHeaderProps> = ({
   description,
   aside,
 }) => (
-  <header className="border-b border-paper-border/90 pb-6">
+  <header className="border-b border-paper-border pb-6">
     <div
       className={cn(
         'flex flex-col gap-4',
@@ -77,23 +73,22 @@ export const ModeHeader: React.FC<ModeHeaderProps> = ({
 
 /** Standard uppercase field label inside coaching forms. */
 export const modeLabelClass =
-  'text-xs font-mono font-bold uppercase tracking-wider text-charcoal flex items-center gap-1.5';
+  'text-xs font-bold uppercase tracking-wider text-charcoal flex items-center gap-1.5';
 
 /** Muted helper label (secondary fields). */
 export const modeLabelMutedClass =
-  'text-xs font-mono font-bold uppercase tracking-wider text-charcoal-muted flex items-center gap-1.5';
+  'text-xs font-bold uppercase tracking-wider text-charcoal-muted flex items-center gap-1.5';
 
 /** Primary workbench card. */
 export const modeCardClass =
-  'bg-paper-card rounded-3xl shadow-card-elevated border border-paper-border p-6 sm:p-7 space-y-5 transition-all duration-300';
+  'bg-paper-card rounded-2xl shadow-sm border border-paper-border p-6 space-y-4';
 
 /** Shared text field look. */
 export const modeInputClass =
-  'w-full min-h-[46px] bg-paper-subtle/80 text-charcoal text-sm px-4 rounded-xl outline-none border border-paper-border/90 focus:bg-white focus:ring-2 focus:ring-magenta-500/20 focus:border-magenta-500 transition-all duration-200 shadow-soft';
+  'w-full min-h-[44px] bg-paper-subtle text-charcoal text-sm px-4 rounded-xl outline-none border border-paper-border focus:bg-paper-card focus:ring-2 focus:ring-magenta-500/20 focus:border-magenta-500 transition-all';
 
 export const modeTextareaClass =
-  'w-full bg-paper-subtle/80 text-charcoal text-sm p-4 rounded-xl resize-none outline-none border border-paper-border/90 leading-relaxed focus:bg-white focus:ring-2 focus:ring-magenta-500/20 focus:border-magenta-500 transition-all duration-200 shadow-soft';
+  'w-full bg-paper-subtle text-charcoal text-sm p-4 rounded-xl resize-none outline-none border border-paper-border leading-relaxed focus:bg-paper-card focus:ring-2 focus:ring-magenta-500/20 focus:border-magenta-500 transition-all';
 
 export const modePrimaryButtonClass =
-  'w-full min-h-[46px] bg-magenta-600 hover:bg-magenta-700 active:scale-[0.98] text-white py-3 px-6 rounded-xl text-xs sm:text-sm font-semibold shadow-glow-magenta hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed';
-
+  'w-full min-h-[44px] bg-magenta-600 hover:bg-magenta-700 active:scale-[0.99] text-white py-3 px-6 rounded-xl text-xs sm:text-sm font-semibold shadow-glow-magenta transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed';

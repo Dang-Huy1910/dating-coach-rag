@@ -11,6 +11,7 @@ import {
   KnowledgeReindexResponse,
   KnowledgeUploadResponse,
   ProfileContextRequest,
+  SessionKitResponse,
   SessionResponse,
   PersonaProfile,
   SimulationChatRequest,
@@ -140,6 +141,10 @@ export const api = {
     return request<void>(`/v1/sessions/${sessionId}`, {
       method: 'DELETE',
     });
+  },
+
+  getSessionKit: async (sessionId: string): Promise<SessionKitResponse> => {
+    return request<SessionKitResponse>(`/v1/sessions/${sessionId}/kit`);
   },
 
   askCoach: async (sessionId: string, question: string): Promise<CoachReply> => {

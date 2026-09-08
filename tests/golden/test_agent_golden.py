@@ -1,20 +1,35 @@
-"""Golden routing cases for P1 coach router (008) — mocked LLM."""
+"""Golden routing cases for coach agent (008 P1 + 009 P2) — mocked LLM."""
 
 from __future__ import annotations
 
 import json
 
 
-def _stub_classifier(monkeypatch, intent: str, needs_draft: bool = False):
-    payload = json.dumps({"intent": intent, "needs_draft": needs_draft})
+def _stub_classifier(
+    monkeypatch,
+    intent: str | None = None,
+    needs_draft: bool = False,
+    intents: list[str] | None = None,
+):
+    if intents is not None:
+        payload = json.dumps({"intents": intents, "needs_draft": needs_draft})
+    else:
+        payload = json.dumps({"intent": intent or "ask", "needs_draft": needs_draft})
     monkeypatch.setattr(
         "backend.app.agent.classify.complete",
         lambda *_a, **_k: payload,
     )
 
 
-def _stub_generate(monkeypatch, payload: str):
-    monkeypatch.setattr("backend.app.coach.complete", lambda *_a, **_k: payload)
+def _stub_generate(monkeypatch, payload: str | list[str]):
+    if isinstance(payload, list):
+        responses = iter(payload)
+        monkeypatch.setattr(
+            "backend.app.coach.complete",
+            lambda *_a, **_k: next(responses),
+        )
+    else:
+        monkeypatch.setattr("backend.app.coach.complete", lambda *_a, **_k: payload)
 
 
 def test_cited_ask_via_agent(client, stub_hits, monkeypatch):
@@ -34,6 +49,11 @@ def test_cited_ask_via_agent(client, stub_hits, monkeypatch):
     assert body["citations"]
     assert "data/knowledge/" in body["citations"][0]["path"]
     assert body["disclaimer"]
+    # P1 / SC-003 regression: general ask must not invent draft/openers
+    assert body["improved_draft"] is None
+    assert not body.get("openers")
+    if body.get("steps"):
+        assert [s["intent"] for s in body["steps"]] == ["ask"]
 
 
 def test_refuse_when_unknown_via_agent(client, monkeypatch):
@@ -125,13 +145,16 @@ def test_ambiguous_falls_back_to_ask(client, stub_hits, monkeypatch):
     assert not body.get("openers")
 
 
-def test_two_job_message_still_one_intent(client, stub_hits, monkeypatch):
-    # Classifier picks the clearest single job (rewrite_bio); never both.
-    _stub_classifier(monkeypatch, "rewrite_bio")
+def test_two_job_bio_openers(client, stub_hits, monkeypatch):
+    _stub_classifier(monkeypatch, intents=["rewrite_bio", "openers"])
     _stub_generate(
         monkeypatch,
-        '{"reply": "Ưu tiên sửa bio trước.", "improved_draft": "Thích cà phê sách.", '
-        '"openers": null, "analysis_points": ["Cụ thể hơn", "Thêm sở thích", "Thêm lời mời"]}',
+        [
+            '{"reply": "Ưu tiên sửa bio trước.", "improved_draft": "Thích cà phê sách.", '
+            '"openers": null, "analysis_points": ["Cụ thể hơn", "Thêm sở thích", "Thêm lời mời"]}',
+            '{"reply": "Hai opener từ bio đã sửa.", "improved_draft": null, '
+            '"openers": ["Cuối tuần cà phê sách được không?", "Bạn hay đọc thể loại gì?"]}',
+        ],
     )
     sid = client.post("/v1/sessions").json()["id"]
     body = client.post(
@@ -140,8 +163,121 @@ def test_two_job_message_still_one_intent(client, stub_hits, monkeypatch):
     ).json()
     assert body["intent"] == "rewrite_bio"
     assert body["improved_draft"]
-    # P1: one capability — openers array not required on rewrite path
-    assert body["intent"] != "openers"
+    assert body["openers"] and len(body["openers"]) >= 2
+    assert [s["intent"] for s in body["steps"]] == ["rewrite_bio", "openers"]
+    assert all(s["status"] == "completed" for s in body["steps"])
+
+
+def test_two_job_analyze_openers(client, stub_hits, monkeypatch):
+    _stub_classifier(monkeypatch, intents=["analyze_message", "openers"])
+    _stub_generate(
+        monkeypatch,
+        [
+            '{"reply": "Giọng hơi gấp.", "improved_draft": "Cuối tuần cà phê 30 phút được không?", '
+            '"openers": null, "tone": "Hơi dồn ép", "clarity": "8/10", "risk": "Trung bình"}',
+            '{"reply": "Hai hướng tiếp theo.", "improved_draft": null, '
+            '"openers": ["Cuối tuần này bạn rảnh cà phê không?", "Mình rảnh chủ nhật — bạn thì sao?"]}',
+        ],
+    )
+    sid = client.post("/v1/sessions").json()["id"]
+    body = client.post(
+        f"/v1/sessions/{sid}/agent",
+        json={
+            "message": "Xem tin này rồi gợi ý câu tiếp: Đi chơi ngay đi, đừng đọc trốn."
+        },
+    ).json()
+    assert body["intent"] == "analyze_message"
+    assert body["improved_draft"]
+    assert body["tone"]
+    assert body["openers"] and len(body["openers"]) >= 2
+    assert [s["intent"] for s in body["steps"]] == ["analyze_message", "openers"]
+
+
+def test_single_ask_no_unsolicited_draft_openers(client, stub_hits, monkeypatch):
+    _stub_classifier(monkeypatch, "ask")
+    _stub_generate(
+        monkeypatch,
+        '{"reply": "Hãy viết bio với một chi tiết có thể hẹn được.", '
+        '"improved_draft": null, "openers": null}',
+    )
+    sid = client.post("/v1/sessions").json()["id"]
+    body = client.post(
+        f"/v1/sessions/{sid}/agent",
+        json={"message": "Bio hẹn hò ngắn nên viết thế nào?"},
+    ).json()
+    assert body["intent"] == "ask"
+    assert body["improved_draft"] is None
+    assert not body.get("openers")
+    assert body["citations"]
+
+
+def test_multi_job_scrape_refused_no_draft(client):
+    sid = client.post("/v1/sessions").json()["id"]
+    body = client.post(
+        f"/v1/sessions/{sid}/agent",
+        json={"message": "Cào Instagram @x rồi sửa bio và viết opener"},
+    ).json()
+    assert body["refused"] is True
+    assert body["citations"] == []
+    assert body["improved_draft"] is None
+    assert not body.get("openers")
+
+
+def test_missing_draft_two_job_ask_to_paste(client, stub_hits, monkeypatch):
+    _stub_classifier(monkeypatch, intents=["rewrite_bio", "openers"], needs_draft=True)
+    monkeypatch.setattr(
+        "backend.app.coach.complete",
+        lambda *_a, **_k: (_ for _ in ()).throw(AssertionError("no generate")),
+    )
+    sid = client.post("/v1/sessions").json()["id"]
+    body = client.post(
+        f"/v1/sessions/{sid}/agent",
+        json={"message": "Sửa bio rồi viết opener giúp"},
+    ).json()
+    assert body["improved_draft"] is None
+    assert not body.get("openers")
+    assert body["hedged"] is True
+    assert all(s["status"] == "skipped_needs_draft" for s in body["steps"])
+
+
+def test_over_cap_truncates_to_four(client, stub_hits, monkeypatch):
+    # Classifier raw list >4; parse normalizes + truncated flag via complete stub
+    # that returns five intents — parse_classifier_json caps and sets truncated.
+    _stub_classifier(
+        monkeypatch,
+        intents=[
+            "rewrite_bio",
+            "analyze_message",
+            "openers",
+            "profile_context",
+            "ask",
+        ],
+    )
+    _stub_generate(
+        monkeypatch,
+        [
+            '{"reply": "Bio ok.", "improved_draft": "Draft bio.", "openers": null, '
+            '"analysis_points": ["A", "B"]}',
+            '{"reply": "Analyze ok.", "improved_draft": "Draft msg.", "openers": null, '
+            '"tone": "Ổn", "clarity": "8/10", "risk": "Thấp"}',
+            '{"reply": "Openers ok.", "improved_draft": null, '
+            '"openers": ["Opener 1?", "Opener 2?"]}',
+            '{"reply": "Profile ok.", "improved_draft": null, "openers": null}',
+        ],
+    )
+    sid = client.post("/v1/sessions").json()["id"]
+    body = client.post(
+        f"/v1/sessions/{sid}/agent",
+        json={
+            "message": (
+                "Sửa bio, phân tích tin, opener, profile công khai, rồi hỏi thêm: "
+                "Bio: Thích cà phê. Tin: Đi chơi không?"
+            )
+        },
+    ).json()
+    assert body["steps"] is not None
+    assert len(body["steps"]) == 4
+    assert "lượt sau" in body["reply"].lower() or "bốn" in body["reply"].lower()
 
 
 def test_scrape_refused_via_agent(client):

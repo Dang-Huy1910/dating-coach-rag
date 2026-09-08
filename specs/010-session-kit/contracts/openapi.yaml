@@ -1,0 +1,91 @@
+openapi: 3.1.0
+info:
+  title: Dating Coach RAG API — Session Kit (010)
+  version: 0.10.0
+  description: >
+    Ephemeral sitting kit. GET the kit; writes happen as a side effect of
+    successful coaching replies (agent or dedicated). No external send.
+servers:
+  - url: http://127.0.0.1:8000
+paths:
+  /v1/sessions/{session_id}/kit:
+    get:
+      operationId: getSessionKit
+      summary: Fetch this sitting's coaching kit
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Kit (possibly empty)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionKitResponse"
+              examples:
+                empty:
+                  value:
+                    improved_bio: null
+                    analysis_points: null
+                    openers: []
+                    improved_message: null
+                    tone: null
+                    clarity: null
+                    risk: null
+                    updated_at: null
+                    slots_filled: []
+                filled:
+                  value:
+                    improved_bio: "Cà phê sáng cuối tuần, tìm người nói chuyện tử tế."
+                    analysis_points: ["Cụ thể hóa sở thích"]
+                    openers:
+                      - "Cuối tuần quán nào bạn hay ngồi?"
+                      - "Bạn thường order gì?"
+                    improved_message: null
+                    tone: null
+                    clarity: null
+                    risk: null
+                    updated_at: "2026-09-08T12:00:00Z"
+                    slots_filled: [bio, openers]
+        "404":
+          description: Session not found
+components:
+  schemas:
+    SessionKitResponse:
+      type: object
+      required:
+        - improved_bio
+        - openers
+        - improved_message
+        - slots_filled
+      properties:
+        improved_bio:
+          type: [string, "null"]
+        analysis_points:
+          type: [array, "null"]
+          items:
+            type: string
+        openers:
+          type: array
+          items:
+            type: string
+        improved_message:
+          type: [string, "null"]
+        tone:
+          type: [string, "null"]
+        clarity:
+          type: [string, "null"]
+        risk:
+          type: [string, "null"]
+        updated_at:
+          type: [string, "null"]
+          format: date-time
+        slots_filled:
+          type: array
+          items:
+            type: string
+            enum: [bio, openers, message]

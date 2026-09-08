@@ -1,4 +1,4 @@
-"""Unit tests for P1 coach router classifier (008)."""
+"""Unit tests for coach router classifier (P1 legacy + P2 intents[])."""
 
 from __future__ import annotations
 
@@ -6,6 +6,7 @@ import backend.app.agent.classify as classify_mod
 from backend.app.agent.classify import (
     ALLOWED_INTENTS,
     classify_message,
+    normalize_intents,
     parse_classifier_json,
 )
 from backend.app.agent.run import extract_fetchable_url
@@ -21,33 +22,71 @@ def test_allowlist_contains_five_intents():
     }
 
 
-def test_parse_valid_json():
-    intent, needs = parse_classifier_json(
-        '{"intent": "rewrite_bio", "needs_draft": false}'
+def test_parse_legacy_single_intent():
+    plan = parse_classifier_json('{"intent": "rewrite_bio", "needs_draft": false}')
+    assert plan.intents == ["rewrite_bio"]
+    assert plan.needs_draft is False
+    assert plan.truncated is False
+
+
+def test_parse_intents_array():
+    plan = parse_classifier_json(
+        '{"intents": ["rewrite_bio", "openers"], "needs_draft": false}'
     )
-    assert intent == "rewrite_bio"
-    assert needs is False
+    assert plan.intents == ["rewrite_bio", "openers"]
+    assert plan.needs_draft is False
 
 
 def test_invalid_json_defaults_to_ask():
-    intent, needs = parse_classifier_json("not json at all")
-    assert intent == "ask"
-    assert needs is False
+    plan = parse_classifier_json("not json at all")
+    assert plan.intents == ["ask"]
+    assert plan.needs_draft is False
 
 
 def test_unknown_intent_defaults_to_ask():
-    intent, needs = parse_classifier_json(
-        '{"intent": "simulation", "needs_draft": true}'
-    )
-    assert intent == "ask"
-    assert needs is False
+    plan = parse_classifier_json('{"intent": "simulation", "needs_draft": true}')
+    assert plan.intents == ["ask"]
+    assert plan.needs_draft is False
 
 
 def test_markdown_fenced_json():
     raw = '```json\n{"intent": "openers", "needs_draft": false}\n```'
-    intent, needs = parse_classifier_json(raw)
-    assert intent == "openers"
-    assert needs is False
+    plan = parse_classifier_json(raw)
+    assert plan.intents == ["openers"]
+    assert plan.needs_draft is False
+
+
+def test_unique_preserves_order():
+    plan = parse_classifier_json(
+        '{"intents": ["rewrite_bio", "openers", "rewrite_bio"], "needs_draft": false}'
+    )
+    assert plan.intents == ["rewrite_bio", "openers"]
+
+
+def test_cap_four_truncated():
+    plan = parse_classifier_json(
+        '{"intents": ["rewrite_bio", "analyze_message", "openers", '
+        '"profile_context", "ask"], "needs_draft": false}'
+    )
+    assert len(plan.intents) == 4
+    assert plan.truncated is True
+    assert "ask" not in plan.intents  # capped before ask-last reorder of 5th
+
+
+def test_draft_before_openers_and_ask_last():
+    intents, truncated = normalize_intents(
+        ["openers", "ask", "rewrite_bio", "analyze_message"]
+    )
+    assert truncated is False
+    assert intents[0] in {"rewrite_bio", "analyze_message"}
+    assert intents.index("openers") > intents.index("rewrite_bio")
+    assert intents[-1] == "ask"
+
+
+def test_empty_intents_become_ask():
+    plan = parse_classifier_json('{"intents": [], "needs_draft": true}')
+    assert plan.intents == ["ask"]
+    assert plan.needs_draft is False
 
 
 def test_safety_short_circuit_skips_classifier(monkeypatch):
@@ -61,6 +100,7 @@ def test_safety_short_circuit_skips_classifier(monkeypatch):
     decision = classify_message("Cào Instagram @someone rồi phân tích giúp")
     assert decision.blocked is True
     assert decision.intent == "ask"
+    assert decision.intents == ["ask"]
     assert decision.safety is not None
     assert decision.safety.allowed is False
     assert called["n"] == 0
@@ -111,6 +151,20 @@ def test_needs_draft_openers_without_context(monkeypatch):
     assert decision.needs_draft is True
 
 
+def test_multi_intent_classify(monkeypatch):
+    monkeypatch.setattr(
+        classify_mod,
+        "complete",
+        lambda *_a, **_k: (
+            '{"intents": ["rewrite_bio", "openers"], "needs_draft": false}'
+        ),
+    )
+    decision = classify_message("Sửa bio rồi gợi ý opener: Thích cà phê.")
+    assert decision.intents == ["rewrite_bio", "openers"]
+    assert decision.intent == "rewrite_bio"
+    assert decision.needs_draft is False
+
+
 def test_instagram_url_not_fetchable():
     assert extract_fetchable_url("https://www.instagram.com/someone/") is None
     assert extract_fetchable_url("Phân tích https://instagram.com/x") is None
@@ -122,6 +176,6 @@ def test_youtube_url_is_fetchable():
 
 
 def test_ask_intent_forces_needs_draft_false():
-    intent, needs = parse_classifier_json('{"intent": "ask", "needs_draft": true}')
-    assert intent == "ask"
-    assert needs is False
+    plan = parse_classifier_json('{"intent": "ask", "needs_draft": true}')
+    assert plan.intents == ["ask"]
+    assert plan.needs_draft is False

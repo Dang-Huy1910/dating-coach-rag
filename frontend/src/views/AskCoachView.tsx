@@ -27,8 +27,31 @@ interface AskCoachViewProps {
   onToast: (msg: string) => void;
 }
 
+const KIT_SLOT_LABELS: Record<string, string> = {
+  bio: 'Bio Studio',
+  openers: 'Gợi ý opener',
+  message: 'Tin nhắn',
+};
+
+function kitSavedMessage(slots: string[] | null | undefined): string | null {
+  if (!slots || slots.length === 0) {
+    return null;
+  }
+  const parts = slots.map((s) => KIT_SLOT_LABELS[s]).filter(Boolean);
+  if (parts.length === 0) {
+    return null;
+  }
+  if (parts.length === 1) {
+    return `Đã lưu vào ${parts[0]} trong phiên này.`;
+  }
+  if (parts.length === 2) {
+    return `Đã lưu vào ${parts[0]} và ${parts[1]} trong phiên này.`;
+  }
+  return `Đã lưu vào ${parts.slice(0, -1).join(', ')} và ${parts[parts.length - 1]} trong phiên này.`;
+}
+
 export const AskCoachView: React.FC<AskCoachViewProps> = ({ initialPrompt, onToast }) => {
-  const { executeWithSession, indexReady } = useSession();
+  const { executeWithSession, indexReady, refreshKit } = useSession();
   const [messages, setMessages] = useState<ChatTurn[]>([]);
   const [inputValue, setInputValue] = useState<string>(initialPrompt || '');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
@@ -69,7 +92,11 @@ export const AskCoachView: React.FC<AskCoachViewProps> = ({ initialPrompt, onToa
     setIsSubmitting(true);
 
     try {
-      const reply = await executeWithSession((sid) => api.askAgent(sid, textToSend));
+      const reply = await executeWithSession(async (sid) => {
+        const result = await api.askAgent(sid, textToSend);
+        await refreshKit(sid);
+        return result;
+      });
 
       const now = new Date();
       const timeString = `${now.getHours()}:${now.getMinutes().toString().padStart(2, '0')}`;
@@ -117,9 +144,10 @@ export const AskCoachView: React.FC<AskCoachViewProps> = ({ initialPrompt, onToa
               Hỏi coach giao tiếp hẹn hò
             </h1>
             <p className="text-sm text-charcoal-muted max-w-2xl leading-relaxed">
-              Gõ tự nhiên — không cần chọn tab Bio / Tin nhắn / Opener. Coach tự chọn một năng lực phù hợp
-              (hỏi, sửa bio, phân tích tin, opener, profile công khai) và trích nguồn từ thư viện đã kiểm duyệt.
-              Các màn chuyên biệt vẫn dùng được khi bạn muốn form riêng.
+              Gõ tự nhiên — không cần chọn tab Bio / Tin nhắn / Opener. Coach có thể chạy tới bốn năng lực
+              trong một lượt (ví dụ sửa bio rồi gợi ý opener), vẫn trích nguồn từ thư viện đã kiểm duyệt.
+              Các màn chuyên biệt vẫn dùng được khi bạn muốn form riêng. Bản nháp chỉ để bạn sao chép —
+              app không gửi lên ứng dụng hẹn hò.
             </p>
           </div>
           <div className="inline-flex items-center gap-2 text-xs font-mono text-charcoal-muted bg-paper-card px-3.5 py-1.5 rounded-full border border-paper-border shadow-xs shrink-0">
@@ -244,13 +272,35 @@ export const AskCoachView: React.FC<AskCoachViewProps> = ({ initialPrompt, onToa
               </div>
 
               <div className="max-w-[95%] sm:max-w-[90%] space-y-3">
-                <div className="flex items-center gap-2 pl-1">
-                  <RoutedIntentBadge intent={msg.coachReply.intent} />
+                <div className="flex flex-wrap items-center gap-2 pl-1">
+                  {msg.coachReply.steps && msg.coachReply.steps.length >= 1 ? (
+                    msg.coachReply.steps.map((step, idx) => (
+                      <span
+                        key={`${msg.id}-step-${idx}-${step.intent}`}
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold uppercase tracking-wider border ${
+                          step.status === 'skipped_needs_draft'
+                            ? 'bg-paper-subtle text-charcoal-muted border-paper-border'
+                            : step.status === 'refused'
+                              ? 'bg-passion-50 text-passion-700 border-passion-200'
+                              : 'bg-magenta-50 text-magenta-700 border-magenta-200'
+                        }`}
+                        title={`${step.label} (${step.status})`}
+                      >
+                        {step.label || intentLabel(step.intent)}
+                      </span>
+                    ))
+                  ) : (
+                    <RoutedIntentBadge intent={msg.coachReply.intent} />
+                  )}
                 </div>
                 <CoachBubble
                   reply={msg.coachReply}
                   timestamp={msg.timestamp}
-                  subtitle={intentLabel(msg.coachReply.intent)}
+                  subtitle={
+                    msg.coachReply.steps && msg.coachReply.steps.length > 1
+                      ? msg.coachReply.steps.map((s) => s.label || intentLabel(s.intent)).join(' → ')
+                      : intentLabel(msg.coachReply.intent)
+                  }
                   onCitationClick={setActiveCitation}
                   onCopyReply={(text) => handleCopy(text)}
                 >
@@ -324,6 +374,15 @@ export const AskCoachView: React.FC<AskCoachViewProps> = ({ initialPrompt, onToa
                     ))}
                   </div>
                 ) : null}
+
+                {(() => {
+                  const saved = kitSavedMessage(msg.coachReply.kit_updated);
+                  return saved ? (
+                    <div className="text-xs text-magenta-800 bg-magenta-50 px-3.5 py-2.5 rounded-xl border border-magenta-200">
+                      {saved}
+                    </div>
+                  ) : null;
+                })()}
               </div>
             </div>
           ))}

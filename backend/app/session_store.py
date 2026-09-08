@@ -19,11 +19,29 @@ class Turn:
 
 
 @dataclass
+class SessionKit:
+    """Ephemeral sitting artifacts (bio / openers / message). Empty on create."""
+
+    improved_bio: str | None = None
+    analysis_points: list[str] | None = None
+    bio_source_intent: str | None = None
+    openers: list[str] = field(default_factory=list)
+    openers_source_intent: str | None = None
+    improved_message: str | None = None
+    tone: str | None = None
+    clarity: str | None = None
+    risk: str | None = None
+    message_source_intent: str | None = None
+    updated_at: datetime | None = None
+
+
+@dataclass
 class CoachingSession:
     id: str
     created_at: datetime
     updated_at: datetime
     messages: list[Turn] = field(default_factory=list)
+    kit: SessionKit = field(default_factory=SessionKit)
 
     @property
     def turn_count(self) -> int:
@@ -37,7 +55,12 @@ class SessionStore:
 
     def create(self) -> CoachingSession:
         now = datetime.now(UTC)
-        session = CoachingSession(id=str(uuid4()), created_at=now, updated_at=now)
+        session = CoachingSession(
+            id=str(uuid4()),
+            created_at=now,
+            updated_at=now,
+            kit=SessionKit(),
+        )
         with self._lock:
             self._sessions[session.id] = session
         return session

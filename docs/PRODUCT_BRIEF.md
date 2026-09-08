@@ -16,7 +16,8 @@ A personal **Dating Coach Chatbot** that:
 4. **Analyzes a message draft** (tone, clarity, risk) and suggests revisions.
 5. Coaches from **public-visible profile text the user already saw** (optional handle/link as a label plus pasted bio/captions). Paste-only — the product does not log into Instagram or fetch the live profile.
 6. Exposes capabilities through a **Backend API**; UI is a thin React client (Streamlit only as a temporary demo).
-7. **Unified chat (P1 router)**: in **Hỏi coach**, the user types naturally without picking a mode; the API routes each turn to **exactly one** existing capability (no multi-step chaining). Dedicated Bio / Message / Openers / Profile screens remain.
+7. **Unified chat (coach agent)**: in **Hỏi coach**, the user types naturally without picking a mode; the API can run **up to four** existing capabilities in one turn (P2), while single-job messages keep P1 behavior. Copy-ready only — no send to dating apps. Dedicated Bio / Message / Openers / Profile screens remain.
+8. **Sitting kit (P3)**: successful bio / openers / message results are stored in the ephemeral session kit so Bio Studio, Openers, and Message already show them — no copying between tabs of this app. New sitting = empty kit; refusals do not write. Still no external send/publish.
 
 ## Target user (v1)
 
@@ -39,8 +40,9 @@ Solo learner / demo user chatting with the coach in a local or simple deployed a
 - Storing sexual/intimate chat logs as a product feature
 - Fine-tuning a custom LLM
 - Full admin dashboard / tickets / auth system (optional later)
-- Multi-step tool chaining / multi-agent crews in one turn (P2+; P1 is one capability per turn)
+- Multi-agent crews / LangGraph planners (P2 is a short ordered list of existing jobs only, max four)
 - Starting chat simulation from the unified-chat router
+- Auto-sending copy-ready drafts or openers to dating apps
 
 ## Domain knowledge base (planned)
 

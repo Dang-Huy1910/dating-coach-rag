@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useSession } from '../context/SessionContext';
 import { api, ApiError } from '../api/client';
 import { Citation, CoachReply } from '../api/types';
@@ -33,7 +33,7 @@ function pointIcon(index: number, text: string) {
 }
 
 export const BioStudioView: React.FC<BioStudioViewProps> = ({ onToast }) => {
-  const { executeWithSession } = useSession();
+  const { executeWithSession, kit, refreshKit } = useSession();
   const [draft, setDraft] = useState<string>(
     'Yêu cuộc sống. Thích du lịch, cà phê và nói chuyện sâu sắc. Tìm người cùng tần số.',
   );
@@ -44,6 +44,33 @@ export const BioStudioView: React.FC<BioStudioViewProps> = ({ onToast }) => {
   const [copied, setCopied] = useState<boolean>(false);
   const [analyzedAt, setAnalyzedAt] = useState<string | null>(null);
   const [copiedReply, setCopiedReply] = useState(false);
+  const [fromKit, setFromKit] = useState(false);
+  const [hydratedKey, setHydratedKey] = useState<string | null>(null);
+
+  useEffect(() => {
+    const bio = kit.improved_bio?.trim();
+    if (!bio) {
+      return;
+    }
+    const key = `${kit.updated_at ?? ''}|${bio}`;
+    if (key === hydratedKey) {
+      return;
+    }
+    setHydratedKey(key);
+    setDraft(bio);
+    setCoachReply({
+      reply: 'Đã điền từ phiên coach — bạn có thể chỉnh và nhờ coach sửa lại.',
+      citations: [],
+      refused: false,
+      hedged: false,
+      disclaimer: '',
+      intent: 'rewrite_bio',
+      improved_draft: bio,
+      analysis_points: kit.analysis_points ?? null,
+    });
+    setFromKit(true);
+    setAnalyzedAt(null);
+  }, [kit, hydratedKey]);
 
   const hasResult = Boolean(coachReply && !coachReply.refused);
   const analysisPoints = coachReply?.analysis_points?.filter(Boolean) ?? [];
@@ -60,9 +87,14 @@ export const BioStudioView: React.FC<BioStudioViewProps> = ({ onToast }) => {
     setIsRefining(true);
     setCoachReply(null);
     setAnalyzedAt(null);
+    setFromKit(false);
 
     try {
-      const reply = await executeWithSession((sid) => api.rewriteBio(sid, draft.trim()));
+      const reply = await executeWithSession(async (sid) => {
+        const result = await api.rewriteBio(sid, draft.trim());
+        await refreshKit(sid);
+        return result;
+      });
       setCoachReply(reply);
       const now = new Date();
       setAnalyzedAt(`${now.getHours()}:${now.getMinutes().toString().padStart(2, '0')}`);
@@ -124,10 +156,17 @@ export const BioStudioView: React.FC<BioStudioViewProps> = ({ onToast }) => {
                 setDraft(e.target.value);
                 setCoachReply(null);
                 setAnalyzedAt(null);
+                setFromKit(false);
               }}
               placeholder="Nhập bio hiện tại của bạn trên Tinder, Bumble hoặc Hinge..."
               className="w-full bg-paper-subtle text-charcoal text-sm p-4 rounded-xl resize-none outline-none focus:bg-paper-card focus:ring-2 focus:ring-magenta-500/20 focus:border-magenta-500 transition-all border border-paper-border leading-relaxed"
             />
+
+            {fromKit && (
+              <div className="text-xs text-magenta-800 bg-magenta-50 p-2.5 rounded-lg border border-magenta-200">
+                Đã điền từ phiên coach
+              </div>
+            )}
 
             {errorMsg && (
               <div

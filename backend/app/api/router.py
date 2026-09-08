@@ -14,11 +14,13 @@ from backend.app.agent.extras import (
     PROFILE_CONTEXT_EXTRA,
     REWRITE_BIO_EXTRA,
 )
-from backend.app.agent.run import run_agent
+from backend.app.agent.run import iter_agent_events, run_agent
 from backend.app.coach import IndexNotReadyError, LLMProviderError, handle
 from backend.app.config import DISCLAIMER_TEXT
+from backend.app.kit import apply_reply_to_kit
 from backend.app.models import (
     AgentRequest,
+    AgentStep,
     AskRequest,
     CoachReply,
     DisclaimerResponse,
@@ -32,6 +34,7 @@ from backend.app.models import (
     OpenersRequest,
     PersonaProfile,
     ProfileContextRequest,
+    SessionKitResponse,
     SessionResponse,
     SimulationChatRequest,
     SimulationChatResponse,
@@ -116,6 +119,12 @@ def delete_session(session_id: UUID, request: Request) -> None:
         raise HTTPException(status_code=404, detail="Không tìm thấy phiên chat.")
 
 
+@router.get("/v1/sessions/{session_id}/kit", response_model=SessionKitResponse)
+def get_session_kit(session_id: UUID, request: Request) -> SessionKitResponse:
+    session = _session_or_404(request, str(session_id))
+    return _kit_response(session)
+
+
 def _json_error(status: int, detail: str, code: str) -> JSONResponse:
     return JSONResponse(status_code=status, content={"detail": detail, "code": code})
 
@@ -159,6 +168,33 @@ def _emit_reply(session_id: str, intent, reply: CoachReply, started: float) -> N
     )
 
 
+def _with_kit(request: Request, session_id: str, reply: CoachReply) -> CoachReply:
+    slots = apply_reply_to_kit(_store(request), session_id, reply)
+    return reply.model_copy(update={"kit_updated": slots or None})
+
+
+def _kit_response(session) -> SessionKitResponse:
+    kit = session.kit
+    slots: list[str] = []
+    if kit.improved_bio:
+        slots.append("bio")
+    if kit.openers:
+        slots.append("openers")
+    if kit.improved_message:
+        slots.append("message")
+    return SessionKitResponse(
+        improved_bio=kit.improved_bio,
+        analysis_points=kit.analysis_points,
+        openers=list(kit.openers),
+        improved_message=kit.improved_message,
+        tone=kit.tone,
+        clarity=kit.clarity,
+        risk=kit.risk,
+        updated_at=kit.updated_at,
+        slots_filled=slots,
+    )
+
+
 def _run(
     request: Request,
     session_id: str,
@@ -187,6 +223,7 @@ def _run(
         raise HTTPException(status_code=exc.status_code, detail=str(exc)) from exc
     except RuntimeError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
+    reply = _with_kit(request, session_id, reply)
     _emit_reply(session_id, intent, reply, started)
     return reply
 
@@ -208,6 +245,7 @@ def ask(session_id: UUID, body: AskRequest, request: Request):
                 intent="ask",
                 user_text=text,
             )
+            reply = _with_kit(request, sid, reply)
             _emit_reply(sid, "ask", reply, started)
             for citation in reply.citations:
                 yield {
@@ -226,7 +264,7 @@ def ask(session_id: UUID, body: AskRequest, request: Request):
 
 @router.post("/v1/sessions/{session_id}/agent", response_model=CoachReply)
 def agent(session_id: UUID, body: AgentRequest, request: Request):
-    """P1 unified-chat router: safety → classify → one existing capability."""
+    """Unified-chat router: safety → classify → 1–4 existing capabilities (P2)."""
     text = _require_text(body.message)
     sid = str(session_id)
     _session_or_404(request, sid)
@@ -248,7 +286,31 @@ def agent(session_id: UUID, body: AgentRequest, request: Request):
     if body.stream:
 
         def events():
-            reply = _execute()
+            reply: CoachReply | None = None
+            try:
+                for kind, payload in iter_agent_events(
+                    store=_store(request), session_id=sid, message=text
+                ):
+                    if kind == "step" and isinstance(payload, AgentStep):
+                        yield {
+                            "event": "step",
+                            "data": payload.model_dump_json(),
+                        }
+                    elif kind == "done" and isinstance(payload, CoachReply):
+                        reply = payload
+            except IndexNotReadyError as exc:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Thư viện kiến thức chưa sẵn sàng. Hãy chạy ingest rồi hỏi lại.",
+                ) from exc
+            except LLMProviderError as exc:
+                raise HTTPException(status_code=exc.status_code, detail=str(exc)) from exc
+            except RuntimeError as exc:
+                raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+            if reply is None:
+                raise HTTPException(status_code=502, detail="Agent did not complete.")
+            reply = _with_kit(request, sid, reply)
             _emit_reply(sid, reply.intent, reply, started)
             for citation in reply.citations:
                 yield {
@@ -263,7 +325,7 @@ def agent(session_id: UUID, body: AgentRequest, request: Request):
 
         return EventSourceResponse(events())
 
-    reply = _execute()
+    reply = _with_kit(request, sid, _execute())
     _emit_reply(sid, reply.intent, reply, started)
     return reply
 

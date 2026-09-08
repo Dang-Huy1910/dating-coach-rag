@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { api, ApiError } from '../api/client';
+import { useI18n } from '../i18n/LocaleContext';
 import {
   PersonaProfile,
   SimulationCoachFeedback,
@@ -38,6 +39,7 @@ interface ChatSimulationViewProps {
 }
 
 export const ChatSimulationView: React.FC<ChatSimulationViewProps> = ({ onToast }) => {
+  const { t } = useI18n();
   const [personas, setPersonas] = useState<PersonaProfile[]>([]);
   const [selectedPersona, setSelectedPersona] = useState<PersonaProfile | null>(null);
   const [messages, setMessages] = useState<SimulationMessage[]>([]);
@@ -195,9 +197,9 @@ export const ChatSimulationView: React.FC<ChatSimulationViewProps> = ({ onToast 
   return (
     <ModePage width="wide">
       <ModeHeader
-        eyebrow="Phòng luyện tập hội thoại"
-        title="Luyện nhắn tin tán tỉnh & Trò chuyện"
-        description="Thực hành trò chuyện làm quen, tìm hiểu và tán tỉnh thường ngày (qua tin nhắn thường, mạng xã hội hay quen biết ngoài đời). Nhận phản hồi thời gian thực từ Dating Coach về nhịp độ, độ duyên dáng và nước đi tiếp theo."
+        eyebrow={t('simulate.eyebrow')}
+        title={t('simulate.title')}
+        description={t('simulate.desc')}
         aside={
           <button
             type="button"

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useSession } from '../context/SessionContext';
+import { useI18n } from '../i18n/LocaleContext';
 import { api, ApiError } from '../api/client';
 import { Citation, CoachReply } from '../api/types';
 import { AiStatusBadge } from '../components/AiStatusBadge';
@@ -34,6 +35,7 @@ function pointIcon(index: number, text: string) {
 
 export const BioStudioView: React.FC<BioStudioViewProps> = ({ onToast }) => {
   const { executeWithSession, kit, refreshKit } = useSession();
+  const { t } = useI18n();
   const [draft, setDraft] = useState<string>(
     'Yêu cuộc sống. Thích du lịch, cà phê và nói chuyện sâu sắc. Tìm người cùng tần số.',
   );
@@ -121,9 +123,9 @@ export const BioStudioView: React.FC<BioStudioViewProps> = ({ onToast }) => {
   return (
     <ModePage width="wide">
       <ModeHeader
-        eyebrow="Bio Refinement Studio"
-        title="Chỉnh sửa Bio & Hồ sơ hẹn hò"
-        description="Đánh giá & phân tích do Coach AI tạo từ đúng bio bạn dán — kèm bản viết lại copy-ready."
+        eyebrow={t('bio.eyebrow')}
+        title={t('bio.title')}
+        description={t('bio.desc')}
         aside={
           <div className="inline-flex items-center gap-2 bg-paper-card px-3.5 py-1.5 rounded-full border border-paper-border shadow-xs text-xs font-mono text-charcoal">
             <History className="w-3.5 h-3.5 text-magenta-600" aria-hidden="true" />

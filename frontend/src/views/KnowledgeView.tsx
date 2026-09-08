@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { api, ApiError } from '../api/client';
+import { useI18n } from '../i18n/LocaleContext';
 import { KnowledgeFormat, KnowledgeSourceInfo } from '../api/types';
 import {
   ModeHeader,
@@ -28,6 +29,7 @@ function formatBytes(value?: number | null): string {
 }
 
 export const KnowledgeView: React.FC<KnowledgeViewProps> = ({ onToast }) => {
+  const { t } = useI18n();
   const [formats, setFormats] = useState<KnowledgeFormat[]>([]);
   const [sources, setSources] = useState<KnowledgeSourceInfo[]>([]);
   const [chunkCount, setChunkCount] = useState<number | null>(null);
@@ -103,9 +105,9 @@ export const KnowledgeView: React.FC<KnowledgeViewProps> = ({ onToast }) => {
   return (
     <ModePage>
       <ModeHeader
-        eyebrow="Thư viện RAG"
-        title="Thêm tài liệu vào knowledge base"
-        description="Tải hướng dẫn / ghi chú coaching của bạn. Hệ thống trích chữ, chia chunk và đưa vào FAISS cùng bộ tài liệu gốc."
+        eyebrow={t('library.eyebrow')}
+        title={t('library.title')}
+        description={t('library.desc')}
         aside={
           <div className="inline-flex items-center gap-2 bg-paper-card px-3.5 py-1.5 rounded-full border border-paper-border shadow-xs text-xs font-mono text-charcoal">
             <Library className="w-3.5 h-3.5 text-magenta-600" aria-hidden="true" />

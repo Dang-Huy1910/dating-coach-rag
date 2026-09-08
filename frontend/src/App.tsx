@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { SessionProvider, useSession } from './context/SessionContext';
+import { useI18n } from './i18n/LocaleContext';
 import { Header, AppMode } from './components/Header';
 import { DisclaimerBar } from './components/DisclaimerBar';
 import { EvalBadge } from './components/EvalBadge';
@@ -17,6 +18,7 @@ import { ChatSimulationView } from './views/ChatSimulationView';
 
 const AppContent: React.FC = () => {
   const { sessionId } = useSession();
+  const { t } = useI18n();
   const [currentMode, setCurrentMode] = useState<AppMode>('welcome');
   const [initialPrompt, setInitialPrompt] = useState<string>('');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -83,7 +85,7 @@ const AppContent: React.FC = () => {
       <Header
         currentMode={currentMode}
         onModeChange={(mode) => handleSelectMode(mode)}
-        onResetSessionNotify={() => showToast('Đã khởi tạo phiên tư vấn mới.')}
+        onResetSessionNotify={() => showToast(t('app.resetToast'))}
       />
 
       <div className="pt-24 sm:pt-20 w-full flex-1">
@@ -99,7 +101,7 @@ const AppContent: React.FC = () => {
       <footer className="w-full bg-paper-card/80 border-t border-paper-border/80 py-8">
         <div className="max-w-4xl mx-auto px-4 text-center flex flex-col items-center gap-3">
           <p className="font-editorial text-lg sm:text-xl text-charcoal italic leading-relaxed">
-            “Chậm lại để hiểu mình trước khi bước vào thế giới của người khác.”
+            {t('app.footerQuote')}
           </p>
           <p className="text-xs text-charcoal-muted font-mono">
             © Coach Dating Communication Lab. RAG-grounded relationship discernment workspace.

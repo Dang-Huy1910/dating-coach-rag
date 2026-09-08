@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useSession } from '../context/SessionContext';
+import { useI18n } from '../i18n/LocaleContext';
 import { api, ApiError } from '../api/client';
 import { Citation, CoachReply, ProfileImage } from '../api/types';
 import { AiStatusBadge } from '../components/AiStatusBadge';
@@ -67,6 +68,7 @@ async function fileToProfileImage(shot: LocalShot): Promise<ProfileImage> {
 
 export const ProfileContextView: React.FC<ProfileContextViewProps> = ({ onToast }) => {
   const { executeWithSession } = useSession();
+  const { t } = useI18n();
   const [handle, setHandle] = useState('');
   const [profileUrl, setProfileUrl] = useState('');
   const [visibleText, setVisibleText] = useState('');
@@ -241,9 +243,9 @@ export const ProfileContextView: React.FC<ProfileContextViewProps> = ({ onToast 
   return (
     <ModePage>
       <ModeHeader
-        eyebrow="YouTube / Reddit public · Ảnh clipboard"
-        title="Coach từ profile công khai bạn đã thấy"
-        description="Link YouTube hoặc Reddit đọc qua API công khai. Instagram không fetch. Handle chỉ để ghi nhớ. Ảnh: upload hoặc Ctrl+V, bấm ảnh để thêm caption/bình luận."
+        eyebrow={t('profile.eyebrow')}
+        title={t('profile.title')}
+        description={t('profile.desc')}
       />
 
       <div className={`${modeCardClass} space-y-5 relative overflow-hidden`}>

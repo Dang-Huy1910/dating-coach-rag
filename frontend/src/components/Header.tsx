@@ -1,5 +1,6 @@
 import React from 'react';
 import { useSession } from '../context/SessionContext';
+import { useI18n } from '../i18n/LocaleContext';
 import { Lock, RotateCcw } from 'lucide-react';
 
 export type AppMode = 'welcome' | 'ask' | 'bio' | 'message' | 'openers' | 'profile' | 'simulate' | 'library';
@@ -12,9 +13,10 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ currentMode, onModeChange, onResetSessionNotify }) => {
   const { resetSession, isLoading } = useSession();
+  const { locale, setLocale, t } = useI18n();
 
   const handleReset = async () => {
-    if (window.confirm('Bạn có muốn bắt đầu một phiên làm việc mới? Toàn bộ nội dung trao đổi hiện tại sẽ được làm mới.')) {
+    if (window.confirm(t('header.resetConfirm'))) {
       await resetSession();
       if (onResetSessionNotify) {
         onResetSessionNotify();
@@ -22,15 +24,15 @@ export const Header: React.FC<HeaderProps> = ({ currentMode, onModeChange, onRes
     }
   };
 
-  const modes: { id: AppMode; label: string }[] = [
-    { id: 'welcome', label: 'Giới thiệu' },
-    { id: 'ask', label: 'Hỏi coach' },
-    { id: 'bio', label: 'Sửa bio' },
-    { id: 'message', label: 'Phân tích tin' },
-    { id: 'openers', label: 'Gợi ý opener' },
-    { id: 'profile', label: 'Dán profile' },
-    { id: 'simulate', label: 'Luyện nhắn tin' },
-    { id: 'library', label: 'Thư viện' },
+  const modes: { id: AppMode; labelKey: string }[] = [
+    { id: 'welcome', labelKey: 'nav.welcome' },
+    { id: 'ask', labelKey: 'nav.ask' },
+    { id: 'bio', labelKey: 'nav.bio' },
+    { id: 'message', labelKey: 'nav.message' },
+    { id: 'openers', labelKey: 'nav.openers' },
+    { id: 'profile', labelKey: 'nav.profile' },
+    { id: 'simulate', labelKey: 'nav.simulate' },
+    { id: 'library', labelKey: 'nav.library' },
   ];
 
   return (
@@ -70,7 +72,7 @@ export const Header: React.FC<HeaderProps> = ({ currentMode, onModeChange, onRes
                     : 'text-charcoal-muted hover:text-charcoal hover:bg-paper/50'
                 }`}
               >
-                {mode.label}
+                {t(mode.labelKey)}
               </button>
             );
           })}
@@ -78,16 +80,47 @@ export const Header: React.FC<HeaderProps> = ({ currentMode, onModeChange, onRes
 
         {/* Actions & Session Privacy Pill */}
         <div className="flex items-center gap-2">
+          <div
+            className="flex items-center p-0.5 rounded-full border border-paper-border bg-paper-subtle shadow-xs"
+            role="group"
+            aria-label={t('header.langLabel')}
+          >
+            <button
+              type="button"
+              onClick={() => setLocale('vi')}
+              className={`min-w-[2.25rem] px-2 py-1 rounded-full text-[11px] font-mono font-bold tracking-wide transition-all cursor-pointer ${
+                locale === 'vi'
+                  ? 'bg-paper-card text-magenta-700 shadow-sm border border-paper-border/80'
+                  : 'text-charcoal-muted hover:text-charcoal'
+              }`}
+              aria-pressed={locale === 'vi'}
+            >
+              {t('header.langVi')}
+            </button>
+            <button
+              type="button"
+              onClick={() => setLocale('en')}
+              className={`min-w-[2.25rem] px-2 py-1 rounded-full text-[11px] font-mono font-bold tracking-wide transition-all cursor-pointer ${
+                locale === 'en'
+                  ? 'bg-paper-card text-magenta-700 shadow-sm border border-paper-border/80'
+                  : 'text-charcoal-muted hover:text-charcoal'
+              }`}
+              aria-pressed={locale === 'en'}
+            >
+              {t('header.langEn')}
+            </button>
+          </div>
+
           <div className="hidden lg:flex items-center gap-1.5 text-xs text-charcoal-muted bg-paper-subtle px-3 py-1.5 rounded-full border border-paper-border font-mono">
             <Lock className="w-3.5 h-3.5 text-magenta-600" />
-            <span>Phiên ẩn danh</span>
+            <span>{t('header.anonymous')}</span>
           </div>
 
           <button
             onClick={handleReset}
             disabled={isLoading}
             className="p-2 rounded-xl text-charcoal-muted hover:text-charcoal hover:bg-paper-subtle border border-transparent hover:border-paper-border transition-all"
-            title="Làm mới phiên chat"
+            title={t('header.resetTitle')}
           >
             <RotateCcw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
           </button>
@@ -108,7 +141,7 @@ export const Header: React.FC<HeaderProps> = ({ currentMode, onModeChange, onRes
                   : 'text-charcoal-muted hover:text-charcoal bg-paper-card border border-paper-border'
               }`}
             >
-              {mode.label}
+              {t(mode.labelKey)}
             </button>
           );
         })}

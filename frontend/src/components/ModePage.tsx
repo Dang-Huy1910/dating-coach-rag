@@ -22,7 +22,11 @@ export const ModePage: React.FC<ModePageProps> = ({
   <div
     className={cn(
       'w-full mx-auto space-y-8 pb-16',
-      width === 'wide' ? 'max-w-6xl' : width === 'chat' ? 'max-w-4xl' : 'max-w-5xl',
+      width === 'wide'
+        ? 'max-w-7xl 2xl:max-w-[1440px]'
+        : width === 'chat'
+          ? 'max-w-4xl 2xl:max-w-5xl'
+          : 'max-w-5xl 2xl:max-w-6xl',
       className,
     )}
   >

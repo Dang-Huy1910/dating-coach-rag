@@ -37,7 +37,7 @@ export const Header: React.FC<HeaderProps> = ({ currentMode, onModeChange, onRes
 
   return (
     <header className="fixed top-0 left-0 w-full z-40 bg-paper/85 backdrop-blur-xl border-b border-paper-border/80 shadow-[0_2px_12px_rgba(24,24,27,0.03)] transition-all">
-      <div className="h-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
+      <div className="h-20 max-w-7xl 2xl:max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
         {/* Brand */}
         <button
           onClick={() => onModeChange('welcome')}

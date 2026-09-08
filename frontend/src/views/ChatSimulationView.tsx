@@ -229,7 +229,7 @@ export const ChatSimulationView: React.FC<ChatSimulationViewProps> = ({ onToast 
           </button>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {personas.map((p) => {
             const isSelected = selectedPersona?.id === p.id;
             return (
@@ -237,36 +237,32 @@ export const ChatSimulationView: React.FC<ChatSimulationViewProps> = ({ onToast 
                 key={p.id}
                 type="button"
                 onClick={() => handleSelectPersona(p)}
-                className={`text-left p-4 rounded-2xl border transition-all duration-300 cursor-pointer relative flex flex-col justify-between gap-3 ${
+                className={`text-left px-4 py-3 rounded-2xl border transition-all duration-200 cursor-pointer relative flex items-center gap-3.5 ${
                   isSelected
                     ? 'bg-gradient-to-br from-magenta-50/90 via-white to-passion-50/50 border-magenta-500 shadow-card-elevated ring-2 ring-magenta-500/20'
-                    : 'bg-paper-card border-paper-border hover:border-magenta-200 hover:shadow-card-elevated hover:-translate-y-0.5 shadow-soft'
+                    : 'bg-paper-card border-paper-border hover:border-magenta-200 hover:shadow-soft shadow-soft'
                 }`}
               >
-                <div className="flex items-start gap-3">
-                  <div className="relative shrink-0">
-                    <span className="text-2xl p-2 rounded-2xl bg-paper-subtle border border-paper-border/80 block shadow-soft">
-                      {p.avatar}
-                    </span>
-                    <span className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full bg-emerald-500 ring-2 ring-white" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-bold text-sm text-charcoal">{p.name}</span>
-                      <span className="text-[11px] text-charcoal-muted font-mono bg-paper-subtle px-1.5 py-0.5 rounded border border-paper-border">
-                        {t('ui.ageYears', { n: p.age })}
-                      </span>
-                    </div>
-                    <p className="text-xs font-medium text-magenta-700 mt-0.5 truncate">{p.tagline}</p>
-                  </div>
+                <div className="relative shrink-0">
+                  <span className="text-xl p-2 rounded-xl bg-paper-subtle border border-paper-border/80 block shadow-soft">
+                    {p.avatar}
+                  </span>
+                  <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white" />
                 </div>
-                <p className="text-xs text-charcoal-muted line-clamp-2 leading-relaxed">
-                  {p.vibe_description}
-                </p>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-sm text-charcoal truncate">{p.name}</span>
+                    <span className="text-[10px] text-charcoal-muted font-mono bg-paper-subtle px-1.5 py-0.5 rounded border border-paper-border shrink-0">
+                      {t('ui.ageYears', { n: p.age })}
+                    </span>
+                  </div>
+                  <p className="text-xs text-magenta-700 font-medium truncate mt-0.5">{p.tagline}</p>
+                  <p className="text-[11px] text-charcoal-muted truncate mt-0.5">{p.vibe_description}</p>
+                </div>
                 {isSelected && (
-                  <div className="flex items-center gap-1 text-[10px] font-mono font-bold uppercase tracking-wider text-magenta-700 bg-magenta-100/70 border border-magenta-200 px-2 py-0.5 rounded-full w-fit">
+                  <div className="shrink-0 flex items-center gap-1 text-[10px] font-mono font-bold uppercase tracking-wider text-magenta-700 bg-magenta-100/80 border border-magenta-200 px-2 py-0.5 rounded-full">
                     <span className="w-1.5 h-1.5 rounded-full bg-neon-pink animate-pulse"></span>
-                    <span>{t('simulate.chatting')}</span>
+                    <span className="hidden sm:inline">{t('simulate.chatting')}</span>
                   </div>
                 )}
               </button>
@@ -276,9 +272,9 @@ export const ChatSimulationView: React.FC<ChatSimulationViewProps> = ({ onToast 
       </div>
 
       {/* 2. Chat Simulation Arena */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Khung Chat Trực Quan (8 cols) */}
-        <div className="lg:col-span-8 flex flex-col rounded-3xl bg-paper-card border border-paper-border shadow-card-elevated overflow-hidden min-h-[580px]">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 xl:gap-8 items-start">
+        {/* Khung Chat Trực Quan (7 cols) */}
+        <div className="lg:col-span-7 xl:col-span-7 flex flex-col rounded-3xl bg-paper-card border border-paper-border shadow-card-elevated overflow-hidden min-h-[580px]">
           {/* Header của Khung Chat */}
           {selectedPersona && (
             <div className="px-5 py-4 bg-paper-subtle/80 backdrop-blur-md border-b border-paper-border flex items-center justify-between">
@@ -381,8 +377,8 @@ export const ChatSimulationView: React.FC<ChatSimulationViewProps> = ({ onToast 
           </form>
         </div>
 
-        {/* Cột Cố Vấn Coach Thời Gian Thực (4 cols) */}
-        <div className="lg:col-span-4 space-y-4">
+        {/* Cột Cố Vấn Coach Thời Gian Thực (5 cols) */}
+        <div className="lg:col-span-5 xl:col-span-5 space-y-4">
           <div className="bg-paper-card rounded-3xl p-5 border border-paper-border shadow-card-elevated space-y-4 relative overflow-hidden">
             <div className="flex items-center justify-between pb-3 border-b border-paper-border">
               <div className="flex items-center gap-2 text-magenta-700">

@@ -101,10 +101,10 @@ export const WelcomeView: React.FC<WelcomeViewProps> = ({ onSelectMode }) => {
   const currentShowcase = showcaseData[activeTab];
 
   return (
-    <div className="relative w-full max-w-6xl mx-auto space-y-12">
+    <div className="relative w-full max-w-7xl 2xl:max-w-[1440px] mx-auto space-y-12">
       {/* Ambient background glows */}
-      <div className="absolute -top-12 -left-20 w-96 h-96 bg-magenta-200/25 rounded-full blur-3xl pointer-events-none -z-10 animate-pulse-subtle"></div>
-      <div className="absolute top-1/2 -right-16 w-80 h-80 bg-passion-200/25 rounded-full blur-3xl pointer-events-none -z-10"></div>
+      <div className="absolute -top-12 -left-20 w-[500px] h-[500px] bg-magenta-200/25 rounded-full blur-3xl pointer-events-none -z-10 animate-pulse-subtle"></div>
+      <div className="absolute top-1/2 -right-16 w-[450px] h-[450px] bg-passion-200/25 rounded-full blur-3xl pointer-events-none -z-10"></div>
 
       {/* Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-y-12 lg:gap-x-12 items-start pt-2">

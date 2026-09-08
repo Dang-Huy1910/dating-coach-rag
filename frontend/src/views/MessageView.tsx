@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useSession } from '../context/SessionContext';
+import { useI18n } from '../i18n/LocaleContext';
 import { api, ApiError } from '../api/client';
 import { Citation, CoachReply } from '../api/types';
 import { AiStatusBadge } from '../components/AiStatusBadge';
@@ -73,6 +74,7 @@ function MetricCard({
 
 export const MessageView: React.FC<MessageViewProps> = ({ onToast }) => {
   const { executeWithSession, kit, refreshKit } = useSession();
+  const { t } = useI18n();
   const [draft, setDraft] = useState<string>(
     'Hey, mình thấy profile bạn khá thú vị. Bạn có muốn đi uống cà phê cuối tuần này không?',
   );
@@ -177,9 +179,9 @@ export const MessageView: React.FC<MessageViewProps> = ({ onToast }) => {
   return (
     <ModePage width="wide">
       <ModeHeader
-        eyebrow="Phòng thực nghiệm đối thoại • Pacing"
-        title="Phân tích tin nhắn trước khi gửi"
-        description="Dán tin sắp gửi — Coach phân tích tone, rõ ý, rủi ro giao tiếp và gợi ý bản viết lại copy-ready."
+        eyebrow={t('message.eyebrow')}
+        title={t('message.title')}
+        description={t('message.desc')}
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">

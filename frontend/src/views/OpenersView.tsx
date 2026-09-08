@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useSession } from '../context/SessionContext';
+import { useI18n } from '../i18n/LocaleContext';
 import { api, ApiError } from '../api/client';
 import { Citation, CoachReply } from '../api/types';
 import { AiStatusBadge } from '../components/AiStatusBadge';
@@ -35,6 +36,7 @@ interface OpenersViewProps {
 
 export const OpenersView: React.FC<OpenersViewProps> = ({ onToast, onNavigateToMessage }) => {
   const { executeWithSession, kit, refreshKit } = useSession();
+  const { t } = useI18n();
   const [contextInput, setContextInput] = useState<string>(
     'App hẹn hò, bio đối phương nói thích chạy bộ và đang luyện tập cho giải bán marathon 21km',
   );
@@ -115,9 +117,9 @@ export const OpenersView: React.FC<OpenersViewProps> = ({ onToast, onNavigateToM
   return (
     <ModePage>
       <ModeHeader
-        eyebrow="Chế độ kiến tạo • Opener"
-        title="Gợi ý opener tự nhiên & khơi gợi kết nối"
-        description="Opener do Coach AI gen từ ngữ cảnh bạn nhập — không dùng mẫu cứng sẵn."
+        eyebrow={t('openers.eyebrow')}
+        title={t('openers.title')}
+        description={t('openers.desc')}
       />
 
       <div className={`${modeCardClass} space-y-5 relative overflow-hidden`}>

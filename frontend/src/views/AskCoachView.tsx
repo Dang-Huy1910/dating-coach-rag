@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useSession } from '../context/SessionContext';
+import { useI18n } from '../i18n/LocaleContext';
 import { api, ApiError } from '../api/client';
 import { Citation, ProfileImage } from '../api/types';
 import { CitationModal } from '../components/CitationModal';
@@ -71,6 +72,7 @@ function kitSavedMessage(slots: string[] | null | undefined): string | null {
 
 export const AskCoachView: React.FC<AskCoachViewProps> = ({ initialPrompt, onToast }) => {
   const { executeWithSession, indexReady, refreshKit, chatTurns, appendChatTurn } = useSession();
+  const { t } = useI18n();
   const messages = chatTurns;
   const [inputValue, setInputValue] = useState<string>(initialPrompt || '');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
@@ -158,11 +160,11 @@ export const AskCoachView: React.FC<AskCoachViewProps> = ({ initialPrompt, onToa
       if (!files.length) return;
       event.preventDefault();
       addFiles(files);
-      onToast(`Đã dán ${files.length} ảnh. Gửi kèm câu “gợi ý opener” nếu muốn.`);
+      onToast(t('ask.pasteToast', { n: files.length }));
     };
     window.addEventListener('paste', onPaste);
     return () => window.removeEventListener('paste', onPaste);
-  }, [onToast]);
+  }, [onToast, t]);
 
   useEffect(() => {
     return () => {
@@ -175,7 +177,7 @@ export const AskCoachView: React.FC<AskCoachViewProps> = ({ initialPrompt, onToa
     const textToSend = (questionText || inputValue).trim();
     const pendingShots = shots;
     if (!textToSend && pendingShots.length === 0) {
-      setErrorMessage('Hãy nhập câu hỏi hoặc dán/thêm ảnh trước khi gửi.');
+      setErrorMessage(t('ask.empty'));
       return;
     }
 
@@ -198,7 +200,7 @@ export const AskCoachView: React.FC<AskCoachViewProps> = ({ initialPrompt, onToa
 
       appendChatTurn({
         id: Math.random().toString(36).substring(2, 9),
-        userQuestion: textToSend || 'Gợi ý opener từ ảnh đã gửi',
+        userQuestion: textToSend || t('ask.fromImage'),
         timestamp: timeString,
         coachReply: reply,
         imagePreviews: previews.length ? previews : undefined,
@@ -231,16 +233,14 @@ export const AskCoachView: React.FC<AskCoachViewProps> = ({ initialPrompt, onToa
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-neon-pink animate-pulse" aria-hidden="true" />
               <span className="text-xs font-mono font-bold uppercase tracking-widest text-magenta-700">
-                Phiên đối thoại • Hỏi coach
+                {t('ask.kicker')}
               </span>
             </div>
             <h1 className="font-editorial text-3xl sm:text-4xl text-charcoal font-normal tracking-tight">
-              Hỏi coach giao tiếp hẹn hò
+              {t('ask.title')}
             </h1>
             <p className="text-sm text-charcoal-muted max-w-2xl leading-relaxed">
-              Gõ tự nhiên — không cần chọn tab Bio / Tin nhắn / Opener. Có thể dán hoặc đính screenshot
-              profile/bài viết để gợi ý opener. Coach có thể chạy tới bốn năng lực trong một lượt.
-              App không gửi tin lên ứng dụng hẹn hò.
+              {t('ask.lead')}
             </p>
           </div>
           <div className="inline-flex items-center gap-2 text-xs font-mono text-charcoal-muted bg-paper-card px-3.5 py-1.5 rounded-full border border-paper-border shadow-xs shrink-0">
@@ -370,7 +370,7 @@ export const AskCoachView: React.FC<AskCoachViewProps> = ({ initialPrompt, onToa
                   <p>{msg.userQuestion}</p>
                 </div>
                 <div className="flex items-center gap-2 text-[11px] text-charcoal-muted px-1 font-mono">
-                  <span>Bạn</span>
+                  <span>{t('ask.you')}</span>
                   <span>•</span>
                   <span>{msg.timestamp}</span>
                 </div>
@@ -530,7 +530,7 @@ export const AskCoachView: React.FC<AskCoachViewProps> = ({ initialPrompt, onToa
             onClick={() => handleSend(inputValue)}
             className="text-magenta-700 font-semibold underline hover:text-magenta-900 shrink-0 cursor-pointer"
           >
-            Thử lại
+            {t('ask.retry')}
           </button>
         </div>
       )}
@@ -569,14 +569,14 @@ export const AskCoachView: React.FC<AskCoachViewProps> = ({ initialPrompt, onToa
             <div className="flex items-center w-full">
             <div className="hidden sm:flex items-center gap-1.5 pl-3 pr-2 text-charcoal-muted border-r border-paper-border my-1">
               <Sparkles className="w-4 h-4 text-magenta-600" />
-              <span className="text-xs font-medium">Chat thống nhất</span>
+              <span className="text-xs font-medium">{t('ask.unified')}</span>
             </div>
 
             <input
               type="text"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
-              placeholder="Hỏi, dán bio/tin, Ctrl+V ảnh profile để gợi ý opener…"
+              placeholder={t('ask.placeholder')}
               disabled={isSubmitting || !indexReady}
               className="flex-1 w-full bg-transparent px-4 py-2 text-sm text-charcoal placeholder:text-charcoal-faint focus:outline-none"
             />
@@ -597,8 +597,8 @@ export const AskCoachView: React.FC<AskCoachViewProps> = ({ initialPrompt, onToa
               onClick={() => fileInputRef.current?.click()}
               disabled={isSubmitting || !indexReady || shots.length >= MAX_SCREENSHOTS}
               className="h-10 w-10 rounded-xl text-magenta-700 hover:bg-magenta-50 flex items-center justify-center cursor-pointer disabled:opacity-40"
-              aria-label="Thêm ảnh"
-              title="Thêm screenshot (tối đa 3)"
+              aria-label={t('ask.addImage')}
+              title={t('ask.addImageTitle')}
             >
               <ImagePlus className="w-5 h-5" />
             </button>
@@ -608,17 +608,17 @@ export const AskCoachView: React.FC<AskCoachViewProps> = ({ initialPrompt, onToa
               disabled={isSubmitting || (!inputValue.trim() && shots.length === 0) || !indexReady}
               className="h-10 px-4 rounded-xl bg-magenta-600 hover:bg-magenta-700 text-white flex items-center justify-center gap-1 text-xs font-semibold transition-all disabled:opacity-40 shadow-sm cursor-pointer active:scale-95"
             >
-              <span>{isSubmitting ? 'Đang đọc...' : 'Gửi'}</span>
+              <span>{isSubmitting ? t('ask.sending') : t('ask.send')}</span>
               <ArrowUp className="w-4 h-4" />
             </button>
             </div>
           </form>
 
           <div className="flex items-center justify-between px-3 mt-2 text-[11px] text-charcoal-muted">
-            <span>Enter gửi · Ctrl+V dán ảnh</span>
+            <span>{t('ask.enter')}</span>
             <div className="flex items-center gap-1.5">
               <Lock className="w-3 h-3 text-magenta-600" />
-              <span>Bảo mật & Phi ẩn danh cục bộ</span>
+              <span>{t('ask.secure')}</span>
             </div>
           </div>
         </div>

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { AppMode } from '../components/Header';
+import { useI18n } from '../i18n/LocaleContext';
 import { ArrowRight, ArrowUpRight, AtSign, BookOpen, Coffee, Info, Lock, PenLine, Sparkles } from 'lucide-react';
 
 interface WelcomeViewProps {
@@ -7,21 +8,16 @@ interface WelcomeViewProps {
 }
 
 export const WelcomeView: React.FC<WelcomeViewProps> = ({ onSelectMode }) => {
-  const [selectedPrompt, setSelectedPrompt] = useState<string>('');
+  const { t } = useI18n();
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 
-  const samplePrompts = [
-    'Tôi thấy kiệt sức với việc nhắn tin thăm dò...',
-    'Làm sao diễn đạt mong đợi nghiêm túc mà không tạo áp lực?',
-    'Phân tích một đoạn tin nhắn khiến tôi bối rối',
-  ];
+  const samplePrompts = [t('welcome.prompt1'), t('welcome.prompt2'), t('welcome.prompt3')];
 
   const handleStart = () => {
-    if (selectedPrompt) {
-      if (selectedPrompt.includes('Phân tích một đoạn tin')) {
-        onSelectMode('message');
-      } else {
-        onSelectMode('ask', selectedPrompt);
-      }
+    if (selectedIndex === 2) {
+      onSelectMode('message');
+    } else if (selectedIndex !== null) {
+      onSelectMode('ask', samplePrompts[selectedIndex]);
     } else {
       onSelectMode('ask');
     }
@@ -41,17 +37,17 @@ export const WelcomeView: React.FC<WelcomeViewProps> = ({ onSelectMode }) => {
             <div className="inline-flex items-center gap-2 bg-paper-card px-3.5 py-1.5 rounded-full border border-paper-border text-magenta-700 shadow-xs">
               <span className="w-2 h-2 rounded-full bg-neon-pink animate-pulse"></span>
               <span className="text-xs font-semibold uppercase tracking-wider">
-                Không gian phản tư độc lập
+                {t('welcome.badge')}
               </span>
             </div>
 
             <h1 className="font-editorial text-4xl sm:text-5xl text-charcoal font-normal leading-[1.15] tracking-tight">
-              Giao tiếp rõ ràng tạo nên <span className="text-gradient-passion font-medium">kết nối chân thật.</span>
+              {t('welcome.h1a')}<span className="text-gradient-passion font-medium">{t('welcome.h1b')}</span>
             </h1>
 
             <div className="relative pl-4 py-2 border-l-2 border-magenta-600">
               <p className="font-editorial text-lg sm:text-xl text-charcoal-muted italic leading-relaxed">
-                “Hẹn hò có chủ đích không bắt đầu bằng việc cố gắng trở nên thu hút trong mắt đối phương. Nó bắt đầu khi bạn hiện diện mà không cần diễn xuất: trung thực với nhu cầu, tinh tế với giới hạn và đủ tĩnh lặng để lắng nghe phản hồi của chính mình.”
+                {t('welcome.quote')}
               </p>
             </div>
           </div>
@@ -66,7 +62,7 @@ export const WelcomeView: React.FC<WelcomeViewProps> = ({ onSelectMode }) => {
             ></div>
             <div className="absolute inset-0 bg-gradient-to-t from-charcoal-deep/90 via-charcoal-deep/30 to-transparent flex items-end p-6">
               <div className="backdrop-blur-md bg-white/10 px-3.5 py-1.5 rounded-lg border border-white/20 text-xs font-mono text-white/90">
-                Ghi chép giao tiếp • Tập 01: Sự hiện diện tĩnh tại
+                {t('welcome.plate')}
               </div>
             </div>
           </div>
@@ -74,21 +70,21 @@ export const WelcomeView: React.FC<WelcomeViewProps> = ({ onSelectMode }) => {
           {/* Triad Pillars */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
             <div className="bg-paper-card p-4 rounded-xl border border-paper-border shadow-xs hover:border-magenta-200 transition-colors">
-              <span className="text-xs font-bold uppercase tracking-wider text-magenta-700">01 / Lắng nghe</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-magenta-700">{t('welcome.p1t')}</span>
               <p className="text-xs text-charcoal-muted mt-1 leading-relaxed">
-                Phân biệt giữa hấp dẫn bốc đồng và sự tương thích an toàn.
+                {t('welcome.p1d')}
               </p>
             </div>
             <div className="bg-paper-card p-4 rounded-xl border border-paper-border shadow-xs hover:border-passion-200 transition-colors">
-              <span className="text-xs font-bold uppercase tracking-wider text-passion-600">02 / Định danh</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-passion-600">{t('welcome.p2t')}</span>
               <p className="text-xs text-charcoal-muted mt-1 leading-relaxed">
-                Nhận diện các mẫu né tránh hoặc bám chấp trong đối thoại.
+                {t('welcome.p2d')}
               </p>
             </div>
             <div className="bg-paper-card p-4 rounded-xl border border-paper-border shadow-xs hover:border-neon-pink transition-colors">
-              <span className="text-xs font-bold uppercase tracking-wider text-magenta-600">03 / Giới hạn</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-magenta-600">{t('welcome.p3t')}</span>
               <p className="text-xs text-charcoal-muted mt-1 leading-relaxed">
-                Thiết lập ranh giới giao tiếp ấm áp nhưng dứt khoát.
+                {t('welcome.p3d')}
               </p>
             </div>
           </div>
@@ -109,7 +105,7 @@ export const WelcomeView: React.FC<WelcomeViewProps> = ({ onSelectMode }) => {
                 Dating Coach
               </h2>
               <p className="text-xs text-charcoal-muted max-w-xs">
-                Coach giao tiếp hẹn hò, không phải app tìm kiếm hay ghép đôi người thật.
+                {t('welcome.cardSub')}
               </p>
             </div>
 
@@ -118,8 +114,8 @@ export const WelcomeView: React.FC<WelcomeViewProps> = ({ onSelectMode }) => {
               <div className="flex items-center gap-2.5">
                 <BookOpen className="w-5 h-5 text-magenta-600 flex-shrink-0" />
                 <div className="flex flex-col">
-                  <span className="text-xs font-semibold text-charcoal">Khung phân tích RAG</span>
-                  <span className="text-[11px] text-charcoal-muted">Neo theo tâm lý học gắn bó & hội thoại trắc ẩn</span>
+                  <span className="text-xs font-semibold text-charcoal">{t('welcome.ragTitle')}</span>
+                  <span className="text-[11px] text-charcoal-muted">{t('welcome.ragSub')}</span>
                 </div>
               </div>
               {/* Micro dots */}
@@ -133,16 +129,16 @@ export const WelcomeView: React.FC<WelcomeViewProps> = ({ onSelectMode }) => {
             {/* Context Prompts */}
             <div className="space-y-2">
               <label className="text-xs font-semibold text-charcoal-muted uppercase tracking-wider block">
-                Bạn muốn bắt đầu xem xét từ điều gì?
+                {t('welcome.startFrom')}
               </label>
               <div className="flex flex-col gap-2">
                 {samplePrompts.map((prompt, idx) => {
-                  const isSelected = selectedPrompt === prompt;
+                  const isSelected = selectedIndex === idx;
                   return (
                     <button
                       key={idx}
                       type="button"
-                      onClick={() => setSelectedPrompt(prompt)}
+                      onClick={() => setSelectedIndex(idx)}
                       className={`text-left px-4 py-2.5 rounded-xl text-xs sm:text-sm transition-all flex items-center justify-between group border cursor-pointer ${
                         isSelected
                           ? 'bg-magenta-50 border-magenta-300 text-magenta-800 font-medium shadow-xs'
@@ -163,9 +159,9 @@ export const WelcomeView: React.FC<WelcomeViewProps> = ({ onSelectMode }) => {
             <div className="bg-passion-50/70 border border-passion-200/80 rounded-xl p-3.5 flex items-start gap-3">
               <Info className="w-5 h-5 text-passion-600 flex-shrink-0 mt-0.5" />
               <div className="space-y-1">
-                <p className="text-xs font-bold text-passion-900">Lưu ý ranh giới thực hành</p>
+                <p className="text-xs font-bold text-passion-900">{t('welcome.boundTitle')}</p>
                 <p className="text-[11px] text-charcoal-muted leading-relaxed">
-                  Đây không phải liệu pháp tâm lý và không ghép đôi người thật. Không gian này phục vụ mục đích rèn luyện phản tư, trau dồi khả năng biểu đạt và nhận định tương tác cá nhân.
+                  {t('welcome.boundBody')}
                 </p>
               </div>
             </div>
@@ -177,11 +173,11 @@ export const WelcomeView: React.FC<WelcomeViewProps> = ({ onSelectMode }) => {
                 onClick={handleStart}
                 className="w-full bg-magenta-600 hover:bg-magenta-700 active:scale-[0.99] text-white py-3.5 px-6 rounded-xl text-sm font-semibold shadow-glow-magenta hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
-                <span>Bắt đầu phiên coach</span>
+                <span>{t('welcome.cta')}</span>
                 <ArrowUpRight className="w-4 h-4" />
               </button>
               <p className="text-[11px] text-charcoal-muted text-center">
-                Không cần tài khoản. Nội dung trò chuyện sẽ không được lưu sau khi đóng tab.
+                {t('welcome.noAccount')}
               </p>
               <button
                 type="button"
@@ -189,7 +185,7 @@ export const WelcomeView: React.FC<WelcomeViewProps> = ({ onSelectMode }) => {
                 className="w-full min-h-[44px] bg-paper-card hover:bg-magenta-50 text-magenta-800 py-3 px-6 rounded-xl text-sm font-semibold border border-magenta-200 hover:border-magenta-300 transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 <AtSign className="w-4 h-4" aria-hidden="true" />
-                <span>Dán bio / caption công khai</span>
+                <span>{t('welcome.pastePublic')}</span>
               </button>
               <button
                 type="button"
@@ -197,17 +193,17 @@ export const WelcomeView: React.FC<WelcomeViewProps> = ({ onSelectMode }) => {
                 className="w-full min-h-[44px] bg-magenta-50/70 hover:bg-magenta-100 text-magenta-900 py-3 px-6 rounded-xl text-sm font-semibold border border-magenta-200 hover:border-magenta-300 transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 <Sparkles className="w-4 h-4 text-magenta-600" aria-hidden="true" />
-                <span>Luyện nhắn tin với đối tượng giả lập</span>
+                <span>{t('welcome.simulate')}</span>
               </button>
               <p className="text-[11px] text-charcoal-muted text-center">
-                Không đăng nhập Instagram. Handle chỉ là nhãn, không tự tải profile.
+                {t('welcome.noIg')}
               </p>
             </div>
 
             {/* Live Privacy Assurance */}
             <div className="flex items-center justify-center gap-1.5 pt-1 text-[11px] text-charcoal-muted/80">
               <Lock className="w-3.5 h-3.5 text-magenta-600" />
-              <span>Phiên bảo mật tạm thời theo thời gian thực</span>
+              <span>{t('welcome.liveSession')}</span>
             </div>
           </div>
 
@@ -217,7 +213,8 @@ export const WelcomeView: React.FC<WelcomeViewProps> = ({ onSelectMode }) => {
               <Coffee className="w-4 h-4" />
             </div>
             <p className="text-xs text-charcoal-muted leading-relaxed">
-              <strong>Lời khuyên từ cố vấn:</strong> Hãy chuẩn bị một tách trà ấm, chọn góc phòng yên tĩnh và cho bản thân ít nhất 10 phút tập trung trọn vẹn.
+              <strong>{t('welcome.adviceLead')}</strong>
+              {t('welcome.advice')}
             </p>
           </div>
         </div>

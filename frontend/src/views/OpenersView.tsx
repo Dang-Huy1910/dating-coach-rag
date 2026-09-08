@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useSession } from '../context/SessionContext';
 import { api, ApiError } from '../api/client';
 import { Citation, CoachReply } from '../api/types';
@@ -34,7 +34,7 @@ interface OpenersViewProps {
 }
 
 export const OpenersView: React.FC<OpenersViewProps> = ({ onToast, onNavigateToMessage }) => {
-  const { executeWithSession } = useSession();
+  const { executeWithSession, kit, refreshKit } = useSession();
   const [contextInput, setContextInput] = useState<string>(
     'App hẹn hò, bio đối phương nói thích chạy bộ và đang luyện tập cho giải bán marathon 21km',
   );
@@ -45,6 +45,31 @@ export const OpenersView: React.FC<OpenersViewProps> = ({ onToast, onNavigateToM
   const [activeCitation, setActiveCitation] = useState<Citation | null>(null);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [analyzedAt, setAnalyzedAt] = useState<string | null>(null);
+  const [fromKit, setFromKit] = useState(false);
+  const [hydratedKey, setHydratedKey] = useState<string | null>(null);
+
+  useEffect(() => {
+    const openers = (kit.openers || []).filter(Boolean);
+    if (openers.length === 0) {
+      return;
+    }
+    const key = `${kit.updated_at ?? ''}|${openers.join('|')}`;
+    if (key === hydratedKey) {
+      return;
+    }
+    setHydratedKey(key);
+    setCoachReply({
+      reply: 'Đã điền từ phiên coach — bạn có thể gen lại nếu muốn.',
+      citations: [],
+      refused: false,
+      hedged: false,
+      disclaimer: '',
+      intent: 'openers',
+      openers,
+    });
+    setFromKit(true);
+    setAnalyzedAt(null);
+  }, [kit, hydratedKey]);
 
   const aiOpeners = coachReply?.openers?.filter(Boolean) ?? [];
   const hasAiOpeners = aiOpeners.length > 0;
@@ -59,10 +84,15 @@ export const OpenersView: React.FC<OpenersViewProps> = ({ onToast, onNavigateToM
     setIsGenerating(true);
     setCoachReply(null);
     setAnalyzedAt(null);
+    setFromKit(false);
 
     try {
       const fullPrompt = `${contextInput.trim()} (Phong cách: ${tone})`;
-      const reply = await executeWithSession((sid) => api.suggestOpeners(sid, fullPrompt));
+      const reply = await executeWithSession(async (sid) => {
+        const result = await api.suggestOpeners(sid, fullPrompt);
+        await refreshKit(sid);
+        return result;
+      });
       setCoachReply(reply);
       const now = new Date();
       setAnalyzedAt(`${now.getHours()}:${now.getMinutes().toString().padStart(2, '0')}`);
@@ -111,11 +141,18 @@ export const OpenersView: React.FC<OpenersViewProps> = ({ onToast, onNavigateToM
               setContextInput(e.target.value);
               setCoachReply(null);
               setAnalyzedAt(null);
+              setFromKit(false);
             }}
             placeholder="Ví dụ: App hẹn hò, ảnh chụp quán cà phê sách, bio thích leo núi..."
             className="w-full bg-paper-subtle text-charcoal text-sm p-4 rounded-xl resize-none outline-none focus:bg-paper-card focus:ring-2 focus:ring-magenta-500/20 focus:border-magenta-500 transition-all border border-paper-border leading-relaxed"
           />
         </div>
+
+        {fromKit && (
+          <div className="text-xs text-magenta-800 bg-magenta-50 p-2.5 rounded-lg border border-magenta-200">
+            Đã điền từ phiên coach
+          </div>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
           <div className="space-y-1.5">

@@ -1,0 +1,221 @@
+openapi: 3.1.0
+info:
+  title: Dating Coach RAG API — Coach Router Agent (008)
+  version: 0.8.0
+  description: >
+    Additive contract for P1 unified-chat routing.
+    Extends specs/001-dating-coach-rag/contracts/openapi.yaml.
+    Classifies one natural-language message into exactly one existing
+    coaching intent, then reuses CoachReply. Dedicated /ask, /rewrite-bio,
+    /analyze-message, /openers, /profile-context are unchanged.
+    JSON is the test surface. SSE is optional and must match /ask event names.
+servers:
+  - url: http://127.0.0.1:8000
+    description: Local demo
+tags:
+  - name: coaching
+paths:
+  /v1/sessions/{session_id}/agent:
+    post:
+      tags: [coaching]
+      summary: Route a natural-language message to one coaching capability (008)
+      operationId: coachViaAgent
+      description: |
+        Safety-screen the message, classify into exactly one existing intent
+        (ask, rewrite_bio, analyze_message, openers, profile_context), then
+        run the same coaching path as the dedicated resource.
+
+        Rules:
+        - Safety block → 200 CoachReply refused, empty citations, skip classify
+        - Missing draft for a specialized intent → 200 ask-to-paste, hedged
+        - Unclear intent → ask
+        - Empty/whitespace message → 400 empty_input
+        - Unknown session → 404
+        - Index not ready (when advice would be generated) → 400
+        - Must not start chat simulation
+        - Must not scrape Instagram or match real people
+      parameters:
+        - $ref: "#/components/parameters/SessionId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgentRequest"
+            examples:
+              generalAsk:
+                summary: General coaching question
+                value:
+                  message: "Bio hẹn hò ngắn nên viết thế nào?"
+              rewriteBio:
+                summary: Bio rewrite with draft
+                value:
+                  message: "Sửa bio giúp: Thích đi cà phê, tìm người tử tế."
+              analyzeMessage:
+                summary: Message analysis with draft
+                value:
+                  message: "Xem tin này ổn không: Đi chơi không? Trả lời nhanh."
+              openers:
+                summary: Opener request
+                value:
+                  message: "Mới match trên app, cả hai thích chạy bộ. Gợi ý opener."
+              missingDraft:
+                summary: Rewrite request without a bio
+                value:
+                  message: "Sửa bio giúp"
+              scrape:
+                summary: Forbidden scrape
+                value:
+                  message: "Cào Instagram @someone rồi phân tích giúp"
+      responses:
+        "200":
+          description: >
+            Coach reply. intent is the routed capability.
+            refused=true for safety or unknown-library refuse.
+            hedged=true for weak retrieval or ask-to-paste (needs_draft).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CoachReply"
+              examples:
+                routedAsk:
+                  value:
+                    reply: "Bio ngắn nên cụ thể về bạn là ai."
+                    citations:
+                      - source_id: "01-profile-bio"
+                        title: "Viết bio / profile hẹn hò"
+                        heading: "Mục tiêu bio"
+                        path: "data/knowledge/01-profile-bio.md"
+                        score: 0.82
+                    refused: false
+                    hedged: false
+                    disclaimer: "Đây là chatbot coach giao tiếp hẹn hò, không thay thế trị liệu."
+                    intent: ask
+                    improved_draft: null
+                    openers: null
+                needsDraft:
+                  value:
+                    reply: "Hãy dán bio hiện tại để mình sửa giúp. Đừng gửi mỗi câu 'sửa bio'."
+                    citations: []
+                    refused: false
+                    hedged: true
+                    disclaimer: "Đây là chatbot coach giao tiếp hẹn hò, không thay thế trị liệu."
+                    intent: rewrite_bio
+                    improved_draft: null
+                    openers: null
+                safetyRefuse:
+                  value:
+                    reply: "Mình không scrape hay tự tải profile mạng xã hội."
+                    citations: []
+                    refused: true
+                    hedged: false
+                    disclaimer: "Đây là chatbot coach giao tiếp hẹn hò, không thay thế trị liệu."
+                    intent: ask
+                    improved_draft: null
+                    openers: null
+        "400":
+          description: Empty/whitespace message, oversize, or index not ready
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                emptyInput:
+                  value:
+                    detail: "Hãy nhập nội dung trước."
+                    code: empty_input
+                indexNotReady:
+                  value:
+                    detail: "Thư viện kiến thức chưa sẵn sàng. Hãy chạy ingest rồi hỏi lại."
+                    code: index_not_ready
+        "404":
+          $ref: "#/components/responses/NotFound"
+components:
+  parameters:
+    SessionId:
+      name: session_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  schemas:
+    AgentRequest:
+      type: object
+      additionalProperties: false
+      required: [message]
+      properties:
+        message:
+          type: string
+          minLength: 1
+          maxLength: 8000
+        stream:
+          type: boolean
+          default: false
+    CoachReply:
+      type: object
+      required: [reply, citations, refused, hedged, disclaimer, intent]
+      properties:
+        reply:
+          type: string
+        citations:
+          type: array
+          items:
+            $ref: "#/components/schemas/Citation"
+        refused:
+          type: boolean
+        hedged:
+          type: boolean
+        disclaimer:
+          type: string
+        intent:
+          type: string
+          enum: [ask, rewrite_bio, analyze_message, openers, profile_context]
+        improved_draft:
+          type: [string, "null"]
+        openers:
+          type: [array, "null"]
+          items:
+            type: string
+        tone:
+          type: [string, "null"]
+        clarity:
+          type: [string, "null"]
+        risk:
+          type: [string, "null"]
+        analysis_points:
+          type: [array, "null"]
+          items:
+            type: string
+    Citation:
+      type: object
+      required: [source_id, title, path, score]
+      properties:
+        source_id:
+          type: string
+        title:
+          type: string
+        heading:
+          type: [string, "null"]
+        path:
+          type: string
+        score:
+          type: number
+    ErrorResponse:
+      type: object
+      required: [detail]
+      properties:
+        detail:
+          type: string
+        code:
+          type: [string, "null"]
+  responses:
+    NotFound:
+      description: Session not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            detail: "Không tìm thấy phiên chat."
+            code: not_found

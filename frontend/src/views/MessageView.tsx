@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useSession } from '../context/SessionContext';
 import { api, ApiError } from '../api/client';
 import { Citation, CoachReply } from '../api/types';
@@ -72,7 +72,7 @@ function MetricCard({
 }
 
 export const MessageView: React.FC<MessageViewProps> = ({ onToast }) => {
-  const { executeWithSession } = useSession();
+  const { executeWithSession, kit, refreshKit } = useSession();
   const [draft, setDraft] = useState<string>(
     'Hey, mình thấy profile bạn khá thú vị. Bạn có muốn đi uống cà phê cuối tuần này không?',
   );
@@ -85,6 +85,40 @@ export const MessageView: React.FC<MessageViewProps> = ({ onToast }) => {
   const [activeCitation, setActiveCitation] = useState<Citation | null>(null);
   const [copied, setCopied] = useState<boolean>(false);
   const [analyzedAt, setAnalyzedAt] = useState<string | null>(null);
+  const [fromKit, setFromKit] = useState(false);
+  const [hydratedKey, setHydratedKey] = useState<string | null>(null);
+
+  useEffect(() => {
+    const original = kit.message_draft?.trim() || '';
+    const improved = kit.improved_message?.trim() || '';
+    if (!original && !improved) {
+      return;
+    }
+    const key = `${kit.updated_at ?? ''}|${original}|${improved}`;
+    if (key === hydratedKey) {
+      return;
+    }
+    setHydratedKey(key);
+    if (original) {
+      setDraft(original);
+    }
+    setCoachReply({
+      reply:
+        kit.message_analysis?.trim() ||
+        'Đã điền từ phiên coach — bạn có thể phân tích lại nếu muốn.',
+      citations: [],
+      refused: false,
+      hedged: false,
+      disclaimer: '',
+      intent: 'analyze_message',
+      improved_draft: improved || null,
+      tone: kit.tone ?? null,
+      clarity: kit.clarity ?? null,
+      risk: kit.risk ?? null,
+    });
+    setFromKit(true);
+    setAnalyzedAt(null);
+  }, [kit, hydratedKey]);
 
   const hasResult = Boolean(coachReply);
   const hasAiMetrics = Boolean(
@@ -107,11 +141,14 @@ export const MessageView: React.FC<MessageViewProps> = ({ onToast }) => {
     setIsAnalyzing(true);
     setCoachReply(null);
     setAnalyzedAt(null);
+    setFromKit(false);
 
     try {
-      const reply = await executeWithSession((sid) =>
-        api.analyzeMessage(sid, draft.trim(), notes.trim() || undefined)
-      );
+      const reply = await executeWithSession(async (sid) => {
+        const result = await api.analyzeMessage(sid, draft.trim(), notes.trim() || undefined);
+        await refreshKit(sid);
+        return result;
+      });
       setCoachReply(reply);
       const now = new Date();
       setAnalyzedAt(
@@ -170,6 +207,7 @@ export const MessageView: React.FC<MessageViewProps> = ({ onToast }) => {
                 setDraft(e.target.value);
                 setCoachReply(null);
                 setAnalyzedAt(null);
+                setFromKit(false);
               }}
               placeholder="Dán hoặc gõ nội dung tin nhắn bạn đang ngập ngừng muốn gửi..."
               className="w-full bg-paper-subtle text-charcoal text-sm p-4 rounded-xl resize-none outline-none focus:bg-paper-card focus:ring-2 focus:ring-magenta-500/20 focus:border-magenta-500 transition-all border border-paper-border leading-relaxed"
@@ -190,6 +228,7 @@ export const MessageView: React.FC<MessageViewProps> = ({ onToast }) => {
                   setNotes(e.target.value);
                   setCoachReply(null);
                   setAnalyzedAt(null);
+                  setFromKit(false);
                 }}
                 placeholder="Ngữ cảnh: đã chat bao lâu, mục tiêu tin nhắn, điều muốn tránh…"
                 className="mt-2 w-full bg-paper-subtle text-charcoal text-sm p-3 rounded-xl resize-none outline-none focus:bg-paper-card focus:ring-2 focus:ring-magenta-500/20 border border-paper-border leading-relaxed"
@@ -206,12 +245,19 @@ export const MessageView: React.FC<MessageViewProps> = ({ onToast }) => {
                   setDraft('');
                   setCoachReply(null);
                   setAnalyzedAt(null);
+                  setFromKit(false);
                 }}
                 className="hover:text-passion-600 transition-colors cursor-pointer"
               >
                 Xóa nháp
               </button>
             </div>
+
+            {fromKit && (
+              <div className="text-xs text-magenta-800 bg-magenta-50 p-2.5 rounded-lg border border-magenta-200">
+                Đã điền từ phiên coach
+              </div>
+            )}
 
             {errorMsg && (
               <div

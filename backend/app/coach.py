@@ -466,6 +466,8 @@ def handle(
     user_text: str,
     extra: str = "",
     profile_request: ProfileContextRequest | None = None,
+    record_turn: bool = True,
+    images: list[ProfileImage] | None = None,
 ) -> CoachReply:
     if intent == "profile_context" and profile_request is not None:
         return _handle_profile_context(
@@ -473,6 +475,7 @@ def handle(
             session_id=session_id,
             profile_request=profile_request,
             extra=extra,
+            record_turn=record_turn,
         )
 
     if not index_ready():
@@ -485,13 +488,15 @@ def handle(
 
     if not verdict.allowed:
         reply = _refusal_reply(intent, verdict)
-        _record(store, session_id, user_text, intent, reply)
+        if record_turn:
+            _record(store, session_id, user_text, intent, reply)
         return reply
 
     craft = intent in ("rewrite_bio", "analyze_message")
     if not hits:
         reply = _unknown_reply(intent, craft=craft)
-        _record(store, session_id, user_text, intent, reply)
+        if record_turn:
+            _record(store, session_id, user_text, intent, reply)
         return reply
 
     prompt = build_user_prompt(
@@ -501,7 +506,10 @@ def handle(
         history=_history(store, session_id),
         extra=extra,
     )
-    parsed = _parse_model_json(complete(prompt))
+    vision = list(images or [])
+    parsed = _parse_model_json(
+        complete(prompt, images=vision) if vision else complete(prompt)
+    )
     openers = parsed.get("openers")
     opener_list = [str(x) for x in openers] if isinstance(openers, list) else None
     if intent == "openers" and opener_list and len(opener_list) < 2:
@@ -541,7 +549,8 @@ def handle(
         risk=risk,
         analysis_points=analysis_points,
     )
-    _record(store, session_id, user_text, intent, reply)
+    if record_turn:
+        _record(store, session_id, user_text, intent, reply)
     return reply
 
 
@@ -551,6 +560,7 @@ def _handle_profile_context(
     session_id: str,
     profile_request: ProfileContextRequest,
     extra: str = "",
+    record_turn: bool = True,
 ) -> CoachReply:
     intent: Intent = "profile_context"
     snapshot = compose_snapshot(profile_request)
@@ -563,12 +573,14 @@ def _handle_profile_context(
             user_message=gate.user_message,
         )
         reply = _refusal_reply(intent, safety)
-        _record(store, session_id, snapshot, intent, reply)
+        if record_turn:
+            _record(store, session_id, snapshot, intent, reply)
         return reply
 
     if gate.code == "private_out_of_scope":
         reply = _private_refusal(intent, gate.user_message)
-        _record(store, session_id, snapshot, intent, reply)
+        if record_turn:
+            _record(store, session_id, snapshot, intent, reply)
         return reply
 
     if not index_ready():
@@ -593,7 +605,8 @@ def _handle_profile_context(
     hits = retrieve_chunks(query) if query else []
     if not hits:
         reply = _unknown_reply(intent, craft=False)
-        _record(store, session_id, snapshot, intent, reply)
+        if record_turn:
+            _record(store, session_id, snapshot, intent, reply)
         return reply
 
     prompt_extra = extra or PROFILE_CONTEXT_EXTRA
@@ -630,7 +643,8 @@ def _handle_profile_context(
         risk=None,
         analysis_points=None,
     )
-    _record(store, session_id, snapshot, intent, reply)
+    if record_turn:
+        _record(store, session_id, snapshot, intent, reply)
     return reply
 
 

@@ -1,0 +1,146 @@
+openapi: 3.1.0
+info:
+  title: Dating Coach RAG API — Multi-Step Coach Agent (009)
+  version: 0.9.0
+  description: >
+    Additive contract on POST /v1/sessions/{id}/agent.
+    One message may run 1–4 existing intents in order.
+    JSON remains the test surface. Optional SSE event "step"
+    before each job; citation/token/refusal/done unchanged from 008.
+servers:
+  - url: http://127.0.0.1:8000
+    description: Local demo
+tags:
+  - name: coaching
+paths:
+  /v1/sessions/{session_id}/agent:
+    post:
+      tags: [coaching]
+      summary: Route one message to one or more coaching jobs (P2)
+      operationId: coachViaAgent
+      description: |
+        Safety-screen, classify into 1–4 unique existing intents, run
+        each through the same handle() path as dedicated resources.
+        Later openers use improved_draft from an earlier rewrite when present.
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgentRequest"
+            examples:
+              twoJobBioOpeners:
+                value:
+                  message: "Sửa bio giúp rồi gợi ý opener: Thích cà phê, tìm người tử tế."
+              singleAsk:
+                value:
+                  message: "Bio hẹn hò ngắn nên viết thế nào?"
+              missingDraft:
+                value:
+                  message: "Sửa bio rồi viết opener giúp"
+              scrapeTwoJob:
+                value:
+                  message: "Cào Instagram @x rồi sửa bio và viết opener"
+      responses:
+        "200":
+          description: Merged CoachReply; steps lists jobs in order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CoachReply"
+              examples:
+                twoJob:
+                  value:
+                    reply: "### Sửa bio\n...\n### Gợi ý opener\n..."
+                    citations: []
+                    refused: false
+                    hedged: false
+                    disclaimer: "Đây là chatbot coach giao tiếp hẹn hò, không thay thế trị liệu."
+                    intent: rewrite_bio
+                    improved_draft: "Cà phê sáng cuối tuần, đang tìm người nói chuyện tử tế."
+                    openers:
+                      - "Cuối tuần này quán cà phê nào bạn hay ngồi?"
+                      - "Mình cũng thích cà phê chậm — bạn thường order gì?"
+                    steps:
+                      - intent: rewrite_bio
+                        status: completed
+                        label: Sửa bio
+                      - intent: openers
+                        status: completed
+                        label: Gợi ý opener
+        "400":
+          description: Empty message or index not ready
+        "404":
+          description: Session not found
+components:
+  schemas:
+    AgentRequest:
+      type: object
+      additionalProperties: false
+      required: [message]
+      properties:
+        message:
+          type: string
+          minLength: 1
+          maxLength: 8000
+        stream:
+          type: boolean
+          default: false
+    AgentStep:
+      type: object
+      required: [intent, status, label]
+      properties:
+        intent:
+          type: string
+          enum: [ask, rewrite_bio, analyze_message, openers, profile_context]
+        status:
+          type: string
+          enum: [completed, skipped_needs_draft, refused]
+        label:
+          type: string
+    CoachReply:
+      type: object
+      required: [reply, citations, refused, hedged, disclaimer, intent]
+      properties:
+        reply:
+          type: string
+        citations:
+          type: array
+          items:
+            type: object
+        refused:
+          type: boolean
+        hedged:
+          type: boolean
+        disclaimer:
+          type: string
+        intent:
+          type: string
+          enum: [ask, rewrite_bio, analyze_message, openers, profile_context]
+        improved_draft:
+          type: [string, "null"]
+        openers:
+          type: [array, "null"]
+          items:
+            type: string
+        tone:
+          type: [string, "null"]
+        clarity:
+          type: [string, "null"]
+        risk:
+          type: [string, "null"]
+        analysis_points:
+          type: [array, "null"]
+          items:
+            type: string
+        steps:
+          type: [array, "null"]
+          items:
+            $ref: "#/components/schemas/AgentStep"

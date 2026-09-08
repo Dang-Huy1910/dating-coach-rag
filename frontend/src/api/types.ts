@@ -1,5 +1,12 @@
 export type Intent = 'ask' | 'rewrite_bio' | 'analyze_message' | 'openers' | 'profile_context';
+export type AgentStepStatus = 'completed' | 'skipped_needs_draft' | 'refused';
 export type PrivacyFlag = 'public' | 'private' | 'unknown';
+
+export interface AgentStep {
+  intent: Intent;
+  status: AgentStepStatus;
+  label: string;
+}
 
 export interface HealthResponse {
   status: 'ok';
@@ -40,6 +47,33 @@ export interface CoachReply {
   risk?: string | null;
   /** LLM evaluation bullets (required for rewrite_bio) */
   analysis_points?: string[] | null;
+  /** Ordered jobs for this turn (P2 multi-step); omit/empty → P1 single badge */
+  steps?: AgentStep[] | null;
+  /** Kit slots written this turn (P3); null/omit if none */
+  kit_updated?: string[] | null;
+}
+
+export interface SessionKitResponse {
+  improved_bio: string | null;
+  analysis_points?: string[] | null;
+  openers: string[];
+  improved_message: string | null;
+  message_draft?: string | null;
+  message_analysis?: string | null;
+  tone?: string | null;
+  clarity?: string | null;
+  risk?: string | null;
+  updated_at?: string | null;
+  slots_filled: string[];
+}
+
+/** One unified-chat turn in this sitting (survives mode/tab switches). */
+export interface ChatTurn {
+  id: string;
+  userQuestion: string;
+  timestamp: string;
+  coachReply: CoachReply;
+  imagePreviews?: string[];
 }
 
 export interface ErrorResponse {
@@ -50,6 +84,12 @@ export interface ErrorResponse {
 export interface AskRequest {
   question: string;
   stream?: boolean;
+}
+
+export interface AgentRequest {
+  message: string;
+  stream?: boolean;
+  images?: ProfileImage[];
 }
 
 export interface DraftRequest {

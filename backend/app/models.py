@@ -4,6 +4,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 Intent = Literal["ask", "rewrite_bio", "analyze_message", "openers", "profile_context"]
+AgentStepStatus = Literal["completed", "skipped_needs_draft", "refused"]
 PrivacyFlag = Literal["public", "private", "unknown"]
 ErrorCode = Literal[
     "empty_input",
@@ -40,15 +41,6 @@ class AskRequest(BaseModel):
     stream: bool = False
 
 
-class DraftRequest(BaseModel):
-    draft: str = Field(min_length=1, max_length=8000)
-    notes: str | None = Field(default=None, max_length=2000)
-
-
-class OpenersRequest(BaseModel):
-    context: str = Field(min_length=1, max_length=8000)
-
-
 class ProfileImage(BaseModel):
     """Screenshot the user already saw. Request-scoped only — never persisted."""
 
@@ -56,6 +48,25 @@ class ProfileImage(BaseModel):
     data_base64: str
     caption: str | None = Field(default=None, max_length=2000)
     comments: str | None = Field(default=None, max_length=4000)
+
+
+class AgentRequest(BaseModel):
+    """Unified-chat message for coach router (008/009). Images are request-scoped."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    message: str = Field(default="", max_length=8000)
+    stream: bool = False
+    images: list[ProfileImage] = Field(default_factory=list)
+
+
+class DraftRequest(BaseModel):
+    draft: str = Field(min_length=1, max_length=8000)
+    notes: str | None = Field(default=None, max_length=2000)
+
+
+class OpenersRequest(BaseModel):
+    context: str = Field(min_length=1, max_length=8000)
 
 
 class ProfileContextRequest(BaseModel):
@@ -80,6 +91,14 @@ class Citation(BaseModel):
     score: float
 
 
+class AgentStep(BaseModel):
+    """One coaching job in a P2 multi-step /agent turn."""
+
+    intent: Intent
+    status: AgentStepStatus
+    label: str
+
+
 class CoachReply(BaseModel):
     reply: str
     citations: list[Citation] = Field(default_factory=list)
@@ -95,6 +114,26 @@ class CoachReply(BaseModel):
     risk: str | None = None
     # Bullet points for bio (and optionally message) evaluation — LLM only
     analysis_points: list[str] | None = None
+    # Ordered jobs for this turn (P2); omit/empty for legacy single-job fixtures
+    steps: list[AgentStep] | None = None
+    # Slots written into this sitting's kit this turn (P3); null if none
+    kit_updated: list[str] | None = None
+
+
+class SessionKitResponse(BaseModel):
+    """GET /v1/sessions/{id}/kit — ephemeral sitting artifacts."""
+
+    improved_bio: str | None = None
+    analysis_points: list[str] | None = None
+    openers: list[str] = Field(default_factory=list)
+    improved_message: str | None = None
+    message_draft: str | None = None
+    message_analysis: str | None = None
+    tone: str | None = None
+    clarity: str | None = None
+    risk: str | None = None
+    updated_at: datetime | None = None
+    slots_filled: list[str] = Field(default_factory=list)
 
 
 class ErrorResponse(BaseModel):

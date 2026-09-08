@@ -1,4 +1,5 @@
 import {
+  AgentRequest,
   AskRequest,
   CoachReply,
   DisclaimerResponse,
@@ -10,6 +11,8 @@ import {
   KnowledgeReindexResponse,
   KnowledgeUploadResponse,
   ProfileContextRequest,
+  ProfileImage,
+  SessionKitResponse,
   SessionResponse,
   PersonaProfile,
   SimulationChatRequest,
@@ -141,9 +144,25 @@ export const api = {
     });
   },
 
+  getSessionKit: async (sessionId: string): Promise<SessionKitResponse> => {
+    return request<SessionKitResponse>(`/v1/sessions/${sessionId}/kit`);
+  },
+
   askCoach: async (sessionId: string, question: string): Promise<CoachReply> => {
     const body: AskRequest = { question, stream: false };
     return request<CoachReply>(`/v1/sessions/${sessionId}/ask`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    });
+  },
+
+  askAgent: async (
+    sessionId: string,
+    message: string,
+    images?: ProfileImage[],
+  ): Promise<CoachReply> => {
+    const body: AgentRequest = { message, stream: false, images: images?.length ? images : undefined };
+    return request<CoachReply>(`/v1/sessions/${sessionId}/agent`, {
       method: 'POST',
       body: JSON.stringify(body),
     });

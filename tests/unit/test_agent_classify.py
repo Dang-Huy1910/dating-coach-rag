@@ -1,0 +1,127 @@
+"""Unit tests for P1 coach router classifier (008)."""
+
+from __future__ import annotations
+
+import backend.app.agent.classify as classify_mod
+from backend.app.agent.classify import (
+    ALLOWED_INTENTS,
+    classify_message,
+    parse_classifier_json,
+)
+from backend.app.agent.run import extract_fetchable_url
+
+
+def test_allowlist_contains_five_intents():
+    assert ALLOWED_INTENTS == {
+        "ask",
+        "rewrite_bio",
+        "analyze_message",
+        "openers",
+        "profile_context",
+    }
+
+
+def test_parse_valid_json():
+    intent, needs = parse_classifier_json(
+        '{"intent": "rewrite_bio", "needs_draft": false}'
+    )
+    assert intent == "rewrite_bio"
+    assert needs is False
+
+
+def test_invalid_json_defaults_to_ask():
+    intent, needs = parse_classifier_json("not json at all")
+    assert intent == "ask"
+    assert needs is False
+
+
+def test_unknown_intent_defaults_to_ask():
+    intent, needs = parse_classifier_json(
+        '{"intent": "simulation", "needs_draft": true}'
+    )
+    assert intent == "ask"
+    assert needs is False
+
+
+def test_markdown_fenced_json():
+    raw = '```json\n{"intent": "openers", "needs_draft": false}\n```'
+    intent, needs = parse_classifier_json(raw)
+    assert intent == "openers"
+    assert needs is False
+
+
+def test_safety_short_circuit_skips_classifier(monkeypatch):
+    called = {"n": 0}
+
+    def boom(_prompt, **_kwargs):
+        called["n"] += 1
+        raise AssertionError("classifier complete must not be called when blocked")
+
+    monkeypatch.setattr(classify_mod, "complete", boom)
+    decision = classify_message("Cào Instagram @someone rồi phân tích giúp")
+    assert decision.blocked is True
+    assert decision.intent == "ask"
+    assert decision.safety is not None
+    assert decision.safety.allowed is False
+    assert called["n"] == 0
+
+
+def test_safety_matchmaking_short_circuit(monkeypatch):
+    monkeypatch.setattr(
+        classify_mod,
+        "complete",
+        lambda *_a, **_k: (_ for _ in ()).throw(AssertionError("no classify")),
+    )
+    decision = classify_message("Ghép đôi mình với người này giúp")
+    assert decision.blocked is True
+    assert decision.intent == "ask"
+
+
+def test_needs_draft_rewrite_without_paste(monkeypatch):
+    monkeypatch.setattr(
+        classify_mod,
+        "complete",
+        lambda *_a, **_k: '{"intent": "rewrite_bio", "needs_draft": true}',
+    )
+    decision = classify_message("Sửa bio giúp")
+    assert decision.blocked is False
+    assert decision.intent == "rewrite_bio"
+    assert decision.needs_draft is True
+
+
+def test_needs_draft_analyze_without_paste(monkeypatch):
+    monkeypatch.setattr(
+        classify_mod,
+        "complete",
+        lambda *_a, **_k: '{"intent": "analyze_message", "needs_draft": true}',
+    )
+    decision = classify_message("Xem tin nhắn giúp")
+    assert decision.intent == "analyze_message"
+    assert decision.needs_draft is True
+
+
+def test_needs_draft_openers_without_context(monkeypatch):
+    monkeypatch.setattr(
+        classify_mod,
+        "complete",
+        lambda *_a, **_k: '{"intent": "openers", "needs_draft": true}',
+    )
+    decision = classify_message("Gợi ý opener đi")
+    assert decision.intent == "openers"
+    assert decision.needs_draft is True
+
+
+def test_instagram_url_not_fetchable():
+    assert extract_fetchable_url("https://www.instagram.com/someone/") is None
+    assert extract_fetchable_url("Phân tích https://instagram.com/x") is None
+
+
+def test_youtube_url_is_fetchable():
+    url = extract_fetchable_url("Xem https://youtu.be/abcdefghijk giúp")
+    assert url == "https://youtu.be/abcdefghijk"
+
+
+def test_ask_intent_forces_needs_draft_false():
+    intent, needs = parse_classifier_json('{"intent": "ask", "needs_draft": true}')
+    assert intent == "ask"
+    assert needs is False

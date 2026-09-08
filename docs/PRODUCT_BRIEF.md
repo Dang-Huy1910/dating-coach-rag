@@ -16,6 +16,7 @@ A personal **Dating Coach Chatbot** that:
 4. **Analyzes a message draft** (tone, clarity, risk) and suggests revisions.
 5. Coaches from **public-visible profile text the user already saw** (optional handle/link as a label plus pasted bio/captions). Paste-only — the product does not log into Instagram or fetch the live profile.
 6. Exposes capabilities through a **Backend API**; UI is a thin React client (Streamlit only as a temporary demo).
+7. **Unified chat (P1 router)**: in **Hỏi coach**, the user types naturally without picking a mode; the API routes each turn to **exactly one** existing capability (no multi-step chaining). Dedicated Bio / Message / Openers / Profile screens remain.
 
 ## Target user (v1)
 
@@ -38,6 +39,8 @@ Solo learner / demo user chatting with the coach in a local or simple deployed a
 - Storing sexual/intimate chat logs as a product feature
 - Fine-tuning a custom LLM
 - Full admin dashboard / tickets / auth system (optional later)
+- Multi-step tool chaining / multi-agent crews in one turn (P2+; P1 is one capability per turn)
+- Starting chat simulation from the unified-chat router
 
 ## Domain knowledge base (planned)
 

@@ -100,10 +100,14 @@ User RAG uploads (UI **Thư viện**): `.md` `.txt` `.pdf` `.docx` `.html` `.csv
 
 See `docs/EVAL.md`, `specs/001-dating-coach-rag/quickstart.md`, `specs/003-public-profile-context/quickstart.md`, and `specs/004-coach-eval-report/`.
 
+## Unified chat / P1 router
+
+**Hỏi coach** is the unified chat: it calls `POST /v1/sessions/{id}/agent`, which safety-screens, classifies into **exactly one** existing capability (`ask`, `rewrite_bio`, `analyze_message`, `openers`, `profile_context`), then reuses the same `handle()` path. Dedicated Bio / Message / Openers / Profile tabs stay as explicit shortcuts. No multi-step tool chaining, no LangGraph, no second “Agent” nav item.
+
 ## Scope v1 (in)
 
 - RAG over curated dating guides (Markdown)
-- Backend API (FastAPI): session, ask, rewrite-bio, analyze-message, openers, **profile-context** (YouTube/Reddit public fetch + paste/screenshots)
+- Backend API (FastAPI): session, ask, rewrite-bio, analyze-message, openers, **profile-context** (YouTube/Reddit public fetch + paste/screenshots), **agent** (P1 unified-chat router)
 - Thin chat UI (React; Streamlit stopgap)
 - Cite sources; refuse / hedge when knowledge is missing
 - Safety: no matchmaking of real people, no NSFW companion, no therapy claims, no Instagram login
@@ -127,4 +131,4 @@ See `docs/EVAL.md`, `specs/001-dating-coach-rag/quickstart.md`, `specs/003-publi
 
 ## Spec Kit
 
-Feature artifacts: `specs/001-dating-coach-rag/`, `specs/003-public-profile-context/`. Constitution: `.specify/memory/constitution.md`.
+Feature artifacts: `specs/001-dating-coach-rag/`, `specs/003-public-profile-context/`, `specs/008-coach-router-agent/`. Constitution: `.specify/memory/constitution.md`.

@@ -4,6 +4,8 @@ import { api, ApiError } from '../api/client';
 import { Citation, CoachReply } from '../api/types';
 import { CitationModal } from '../components/CitationModal';
 import { CoachBubble } from '../components/CoachBubble';
+import { CopyReadyCard } from '../components/CopyReadyCard';
+import { RoutedIntentBadge, intentLabel } from '../components/RoutedIntentBadge';
 import {
   AlertCircle,
   ArrowUp,
@@ -32,6 +34,7 @@ export const AskCoachView: React.FC<AskCoachViewProps> = ({ initialPrompt, onToa
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [activeCitation, setActiveCitation] = useState<Citation | null>(null);
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const starterPrompts = [
@@ -66,7 +69,7 @@ export const AskCoachView: React.FC<AskCoachViewProps> = ({ initialPrompt, onToa
     setIsSubmitting(true);
 
     try {
-      const reply = await executeWithSession((sid) => api.askCoach(sid, textToSend));
+      const reply = await executeWithSession((sid) => api.askAgent(sid, textToSend));
 
       const now = new Date();
       const timeString = `${now.getHours()}:${now.getMinutes().toString().padStart(2, '0')}`;
@@ -89,8 +92,12 @@ export const AskCoachView: React.FC<AskCoachViewProps> = ({ initialPrompt, onToa
     }
   };
 
-  const handleCopy = (text: string) => {
+  const handleCopy = (text: string, key?: string) => {
     navigator.clipboard.writeText(text).then(() => {
+      if (key) {
+        setCopiedKey(key);
+        setTimeout(() => setCopiedKey(null), 2000);
+      }
       onToast('Đã sao chép nội dung vào khay nhớ tạm!');
     });
   };
@@ -110,7 +117,9 @@ export const AskCoachView: React.FC<AskCoachViewProps> = ({ initialPrompt, onToa
               Hỏi coach giao tiếp hẹn hò
             </h1>
             <p className="text-sm text-charcoal-muted max-w-2xl leading-relaxed">
-              Hỏi về bio, opener, nhịp chat, ranh giới… Coach trích nguồn từ thư viện đã kiểm duyệt khi trả lời.
+              Gõ tự nhiên — không cần chọn tab Bio / Tin nhắn / Opener. Coach tự chọn một năng lực phù hợp
+              (hỏi, sửa bio, phân tích tin, opener, profile công khai) và trích nguồn từ thư viện đã kiểm duyệt.
+              Các màn chuyên biệt vẫn dùng được khi bạn muốn form riêng.
             </p>
           </div>
           <div className="inline-flex items-center gap-2 text-xs font-mono text-charcoal-muted bg-paper-card px-3.5 py-1.5 rounded-full border border-paper-border shadow-xs shrink-0">
@@ -189,7 +198,8 @@ export const AskCoachView: React.FC<AskCoachViewProps> = ({ initialPrompt, onToa
               Bắt đầu với một sự chân thật.
             </h2>
             <p className="text-sm text-charcoal-muted max-w-md mt-1 leading-relaxed">
-              Chọn gợi ý bên dưới hoặc gõ câu hỏi — câu trả lời có citation khi thư viện đủ mạnh.
+              Chọn gợi ý bên dưới hoặc gõ câu hỏi / dán bio hay tin nhắn — không cần đổi tab.
+              Câu trả lời có citation khi thư viện đủ mạnh.
             </p>
           </div>
 
@@ -233,14 +243,87 @@ export const AskCoachView: React.FC<AskCoachViewProps> = ({ initialPrompt, onToa
                 </div>
               </div>
 
-              <div className="max-w-[95%] sm:max-w-[90%]">
+              <div className="max-w-[95%] sm:max-w-[90%] space-y-3">
+                <div className="flex items-center gap-2 pl-1">
+                  <RoutedIntentBadge intent={msg.coachReply.intent} />
+                </div>
                 <CoachBubble
                   reply={msg.coachReply}
                   timestamp={msg.timestamp}
-                  subtitle="Tham vấn cấu trúc đối thoại cá nhân"
+                  subtitle={intentLabel(msg.coachReply.intent)}
                   onCitationClick={setActiveCitation}
                   onCopyReply={(text) => handleCopy(text)}
-                />
+                >
+                  {msg.coachReply.analysis_points && msg.coachReply.analysis_points.length > 0 ? (
+                    <ul className="pl-1 space-y-1.5 text-sm text-charcoal list-disc list-inside">
+                      {msg.coachReply.analysis_points.map((point, idx) => (
+                        <li key={`${msg.id}-ap-${idx}`}>{point}</li>
+                      ))}
+                    </ul>
+                  ) : null}
+                  {(msg.coachReply.tone || msg.coachReply.clarity || msg.coachReply.risk) ? (
+                    <div className="pl-1 grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                      {msg.coachReply.tone ? (
+                        <div className="rounded-xl bg-passion-50 border border-passion-200 px-3 py-2">
+                          <div className="font-mono font-bold text-passion-700 mb-0.5">Giọng điệu</div>
+                          <div className="text-charcoal">{msg.coachReply.tone}</div>
+                        </div>
+                      ) : null}
+                      {msg.coachReply.clarity ? (
+                        <div className="rounded-xl bg-magenta-50 border border-magenta-200 px-3 py-2">
+                          <div className="font-mono font-bold text-magenta-800 mb-0.5">Độ rõ</div>
+                          <div className="text-charcoal">{msg.coachReply.clarity}</div>
+                        </div>
+                      ) : null}
+                      {msg.coachReply.risk ? (
+                        <div className="rounded-xl bg-passion-50 border border-passion-200 px-3 py-2">
+                          <div className="font-mono font-bold text-passion-700 mb-0.5">Rủi ro</div>
+                          <div className="text-charcoal">{msg.coachReply.risk}</div>
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </CoachBubble>
+
+                {msg.coachReply.improved_draft ? (
+                  <CopyReadyCard
+                    title={
+                      msg.coachReply.intent === 'analyze_message'
+                        ? 'Bản viết lại gợi ý'
+                        : 'Bản sửa gợi ý (Copy-Ready)'
+                    }
+                    content={msg.coachReply.improved_draft}
+                    onCopy={() => handleCopy(msg.coachReply.improved_draft!, `${msg.id}-draft`)}
+                    copied={copiedKey === `${msg.id}-draft`}
+                  />
+                ) : null}
+
+                {msg.coachReply.openers && msg.coachReply.openers.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {msg.coachReply.openers.map((opener, idx) => (
+                      <div
+                        key={`${msg.id}-op-${idx}`}
+                        className="bg-paper-card rounded-2xl p-5 shadow-sm border-2 border-magenta-200/80 flex flex-col gap-3"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-xs font-bold text-charcoal uppercase tracking-wider">
+                            Phương án 0{idx + 1}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleCopy(opener, `${msg.id}-op-${idx}`)}
+                            className="text-[11px] font-semibold text-magenta-700 hover:text-magenta-900 cursor-pointer"
+                          >
+                            {copiedKey === `${msg.id}-op-${idx}` ? 'Đã chép!' : 'Sao chép'}
+                          </button>
+                        </div>
+                        <p className="font-editorial text-base text-charcoal italic leading-relaxed">
+                          “{opener}”
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
               </div>
             </div>
           ))}
@@ -300,14 +383,14 @@ export const AskCoachView: React.FC<AskCoachViewProps> = ({ initialPrompt, onToa
           >
             <div className="hidden sm:flex items-center gap-1.5 pl-3 pr-2 text-charcoal-muted border-r border-paper-border my-1">
               <Sparkles className="w-4 h-4 text-magenta-600" />
-              <span className="text-xs font-medium">Hỏi coach</span>
+              <span className="text-xs font-medium">Chat thống nhất</span>
             </div>
 
             <input
               type="text"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
-              placeholder="Hỏi về bio, ngữ cảnh nhắn tin, hoặc một thắc mắc hẹn hò cụ thể..."
+              placeholder="Hỏi, dán bio/tin nhắn, hoặc mô tả ngữ cảnh opener…"
               disabled={isSubmitting || !indexReady}
               className="flex-1 w-full bg-transparent px-4 py-2 text-sm text-charcoal placeholder:text-charcoal-faint focus:outline-none"
             />

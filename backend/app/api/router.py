@@ -8,9 +8,17 @@ from fastapi.responses import JSONResponse
 from sse_starlette.sse import EventSourceResponse
 
 from backend.analytics.emit import emit_usage_event
+from backend.app.agent.extras import (
+    ANALYZE_MESSAGE_EXTRA,
+    OPENERS_EXTRA,
+    PROFILE_CONTEXT_EXTRA,
+    REWRITE_BIO_EXTRA,
+)
+from backend.app.agent.run import run_agent
 from backend.app.coach import IndexNotReadyError, LLMProviderError, handle
 from backend.app.config import DISCLAIMER_TEXT
 from backend.app.models import (
+    AgentRequest,
     AskRequest,
     CoachReply,
     DisclaimerResponse,
@@ -29,7 +37,6 @@ from backend.app.models import (
     SimulationChatResponse,
 )
 from backend.app.profile_gate import classify, has_visible_context, validate_images
-from backend.app.prompts import PROFILE_CONTEXT_EXTRA
 from backend.app.public_fetch import fetch_public_profile, merge_fetched_text
 from backend.app.rag import uploads as knowledge_uploads
 from backend.app.rag.retrieve import get_loaded_index, index_ready
@@ -217,36 +224,69 @@ def ask(session_id: UUID, body: AskRequest, request: Request):
     return _run(request, sid, "ask", text)
 
 
+@router.post("/v1/sessions/{session_id}/agent", response_model=CoachReply)
+def agent(session_id: UUID, body: AgentRequest, request: Request):
+    """P1 unified-chat router: safety → classify → one existing capability."""
+    text = _require_text(body.message)
+    sid = str(session_id)
+    _session_or_404(request, sid)
+    started = time.perf_counter()
+
+    def _execute() -> CoachReply:
+        try:
+            return run_agent(store=_store(request), session_id=sid, message=text)
+        except IndexNotReadyError as exc:
+            raise HTTPException(
+                status_code=400,
+                detail="Thư viện kiến thức chưa sẵn sàng. Hãy chạy ingest rồi hỏi lại.",
+            ) from exc
+        except LLMProviderError as exc:
+            raise HTTPException(status_code=exc.status_code, detail=str(exc)) from exc
+        except RuntimeError as exc:
+            raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+    if body.stream:
+
+        def events():
+            reply = _execute()
+            _emit_reply(sid, reply.intent, reply, started)
+            for citation in reply.citations:
+                yield {
+                    "event": "citation",
+                    "data": citation.model_dump_json(),
+                }
+            if reply.refused:
+                yield {"event": "refusal", "data": reply.reply}
+            else:
+                yield {"event": "token", "data": reply.reply}
+            yield {"event": "done", "data": reply.model_dump_json()}
+
+        return EventSourceResponse(events())
+
+    reply = _execute()
+    _emit_reply(sid, reply.intent, reply, started)
+    return reply
+
+
 @router.post("/v1/sessions/{session_id}/rewrite-bio", response_model=CoachReply)
 def rewrite_bio(session_id: UUID, body: DraftRequest, request: Request):
     text = _require_text(body.draft)
     notes = f" Notes: {body.notes}" if body.notes else ""
-    extra = (
-        "REQUIRED: return analysis_points as 2–4 short Vietnamese bullets evaluating THIS bio "
-        "(what is vague/generic, what to make concrete, what natural invite/hook to add). "
-        "Also return improved_draft as a copy-ready bio. Do not put the product disclaimer inside reply."
-        + notes
-    )
+    extra = REWRITE_BIO_EXTRA + notes
     return _run(request, str(session_id), "rewrite_bio", text, extra)
 
 
 @router.post("/v1/sessions/{session_id}/analyze-message", response_model=CoachReply)
 def analyze_message(session_id: UUID, body: DraftRequest, request: Request):
     text = _require_text(body.draft)
-    extra = (
-        "REQUIRED: populate tone, clarity, and risk from YOUR analysis of this draft "
-        "(short Vietnamese labels, max ~10 words each; interpersonal risk only, not clinical). "
-        "Also return improved_draft. Do not put the product disclaimer inside reply. "
-        "Notes: " + (body.notes or "")
-    )
+    extra = ANALYZE_MESSAGE_EXTRA + " Notes: " + (body.notes or "")
     return _run(request, str(session_id), "analyze_message", text, extra)
 
 
 @router.post("/v1/sessions/{session_id}/openers", response_model=CoachReply)
 def openers(session_id: UUID, body: OpenersRequest, request: Request):
     text = _require_text(body.context)
-    extra = "Suggest at least two distinct opener options in the openers array."
-    return _run(request, str(session_id), "openers", text, extra)
+    return _run(request, str(session_id), "openers", text, OPENERS_EXTRA)
 
 
 @router.post("/v1/sessions/{session_id}/profile-context", response_model=CoachReply)

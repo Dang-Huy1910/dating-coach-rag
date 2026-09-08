@@ -40,6 +40,15 @@ class AskRequest(BaseModel):
     stream: bool = False
 
 
+class AgentRequest(BaseModel):
+    """Unified-chat message for P1 coach router (008)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    message: str = Field(min_length=1, max_length=8000)
+    stream: bool = False
+
+
 class DraftRequest(BaseModel):
     draft: str = Field(min_length=1, max_length=8000)
     notes: str | None = Field(default=None, max_length=2000)

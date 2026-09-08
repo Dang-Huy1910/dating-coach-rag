@@ -1,4 +1,5 @@
 import {
+  AgentRequest,
   AskRequest,
   CoachReply,
   DisclaimerResponse,
@@ -144,6 +145,14 @@ export const api = {
   askCoach: async (sessionId: string, question: string): Promise<CoachReply> => {
     const body: AskRequest = { question, stream: false };
     return request<CoachReply>(`/v1/sessions/${sessionId}/ask`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    });
+  },
+
+  askAgent: async (sessionId: string, message: string): Promise<CoachReply> => {
+    const body: AgentRequest = { message, stream: false };
+    return request<CoachReply>(`/v1/sessions/${sessionId}/agent`, {
       method: 'POST',
       body: JSON.stringify(body),
     });

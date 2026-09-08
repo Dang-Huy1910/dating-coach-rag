@@ -52,6 +52,11 @@ export interface AskRequest {
   stream?: boolean;
 }
 
+export interface AgentRequest {
+  message: string;
+  stream?: boolean;
+}
+
 export interface DraftRequest {
   draft: string;
   notes?: string;

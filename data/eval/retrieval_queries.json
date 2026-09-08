@@ -88,5 +88,30 @@
     "id": "red-flags-money",
     "query": "Xin tiền sớm khi mới chat có phải dấu hiệu xấu không?",
     "expected_source_ids": ["05-red-flags"]
+  },
+  {
+    "id": "bio-concrete-en",
+    "query": "How should I write a short dating bio that is specific?",
+    "expected_source_ids": ["01-profile-bio.en", "06-bio-advanced.en"]
+  },
+  {
+    "id": "opener-hiking-en",
+    "query": "First-message opener based on a bio that mentions hiking and running",
+    "expected_source_ids": ["02-openers.en", "07-public-profile-context.en"]
+  },
+  {
+    "id": "pacing-slow-en",
+    "query": "How do I pace a chat so I don't come on too strong?",
+    "expected_source_ids": ["03-pacing.en"]
+  },
+  {
+    "id": "boundaries-say-no-en",
+    "query": "How to politely refuse a late-night meetup and keep a consent boundary",
+    "expected_source_ids": ["04-boundaries.en"]
+  },
+  {
+    "id": "red-flags-info-en",
+    "query": "What are informational dating-chat warning signs?",
+    "expected_source_ids": ["05-red-flags.en"]
   }
 ]

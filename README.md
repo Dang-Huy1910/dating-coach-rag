@@ -6,7 +6,7 @@ Not a Tinder clone. Not an AI girlfriend. This is a coach that helps with profil
 
 ## Product in one sentence
 
-> Chatbot hỗ trợ hẹn hò thông minh: tư vấn profile, gợi ý cách nhắn tin, phân tích hội thoại, và coach từ bio/caption công khai **đã dán** — RAG từ knowledge base đã kiểm duyệt. Không scrape, không đăng nhập Instagram.
+> Chatbot hỗ trợ hẹn hò thông minh: tư vấn profile, gợi ý cách nhắn tin, phân tích hội thoại, và coach từ bio/caption công khai **đã dán** — RAG từ knowledge base đã kiểm duyệt (Vietnamese + English guides). Không scrape, không đăng nhập Instagram.
 
 ## Run locally
 

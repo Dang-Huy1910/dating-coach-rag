@@ -83,14 +83,18 @@ def test_message_write():
         session.id,
         _reply(
             intent="analyze_message",
+            reply="Giọng hơi gấp, nên nới nhịp.",
             improved_draft="Cuối tuần cà phê được không?",
             tone="Thân thiện",
             clarity="8/10",
             risk="Thấp",
         ),
+        user_text="Xem tin này ổn không: Đi chơi không? Trả lời nhanh.",
     )
     assert written == ["message"]
     assert session.kit.improved_message == "Cuối tuần cà phê được không?"
+    assert session.kit.message_draft == "Xem tin này ổn không: Đi chơi không? Trả lời nhanh."
+    assert session.kit.message_analysis == "Giọng hơi gấp, nên nới nhịp."
     assert session.kit.tone == "Thân thiện"
     assert session.kit.clarity == "8/10"
     assert session.kit.risk == "Thấp"

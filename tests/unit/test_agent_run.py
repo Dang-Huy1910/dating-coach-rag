@@ -5,7 +5,7 @@ from __future__ import annotations
 import backend.app.agent.run as run_mod
 from backend.app.agent.run import run_agent
 from backend.app.config import DISCLAIMER_TEXT
-from backend.app.models import Citation, CoachReply
+from backend.app.models import Citation, CoachReply, ProfileImage
 from backend.app.session_store import SessionStore
 
 
@@ -21,7 +21,7 @@ def _stub_plan(monkeypatch, intents: list[str], needs_draft: bool = False, trunc
     monkeypatch.setattr(
         run_mod,
         "classify_message",
-        lambda _text: RoutingDecision(
+        lambda *_a, **_k: RoutingDecision(
             intents=intents,  # type: ignore[arg-type]
             needs_draft=needs_draft,
             blocked=False,
@@ -199,3 +199,27 @@ def test_cap_normalize_unit():
     )
     assert truncated is True
     assert len(intents) == 4
+
+
+def test_openers_job_forwards_images(monkeypatch):
+    store, sid = _store_with_session()
+    _stub_plan(monkeypatch, ["openers"])
+    seen: dict[str, object] = {}
+
+    def fake_handle(**kwargs):
+        seen["images"] = kwargs.get("images")
+        return CoachReply(
+            reply="Từ ảnh.",
+            citations=[],
+            refused=False,
+            hedged=False,
+            disclaimer=DISCLAIMER_TEXT,
+            intent="openers",
+            openers=["Chạy bộ cuối tuần nào?", "Bạn luyện 21km ở đâu?"],
+        )
+
+    monkeypatch.setattr(run_mod, "handle", fake_handle)
+    shot = ProfileImage(mime_type="image/png", data_base64="aaaa")
+    reply = run_agent(store, sid, "Gợi ý opener", images=[shot])
+    assert seen["images"]
+    assert reply.openers and len(reply.openers) >= 2

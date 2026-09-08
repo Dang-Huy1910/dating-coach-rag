@@ -179,3 +179,28 @@ def test_ask_intent_forces_needs_draft_false():
     plan = parse_classifier_json('{"intent": "ask", "needs_draft": true}')
     assert plan.intents == ["ask"]
     assert plan.needs_draft is False
+
+
+def test_has_images_clears_openers_needs_draft(monkeypatch):
+    monkeypatch.setattr(
+        classify_mod,
+        "complete",
+        lambda *_a, **_k: '{"intent": "openers", "needs_draft": true}',
+    )
+    decision = classify_message("Gợi ý opener", has_images=True)
+    assert decision.intent == "openers"
+    assert decision.needs_draft is False
+
+
+def test_has_images_empty_ask_becomes_openers(monkeypatch):
+    monkeypatch.setattr(
+        classify_mod,
+        "complete",
+        lambda *_a, **_k: '{"intent": "ask", "needs_draft": false}',
+    )
+    decision = classify_message(
+        "Gợi ý opener từ ảnh profile/screenshot mình đã thấy.",
+        has_images=True,
+    )
+    assert decision.intents == ["openers"]
+    assert decision.needs_draft is False

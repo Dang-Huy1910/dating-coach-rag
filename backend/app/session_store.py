@@ -28,6 +28,8 @@ class SessionKit:
     openers: list[str] = field(default_factory=list)
     openers_source_intent: str | None = None
     improved_message: str | None = None
+    message_draft: str | None = None
+    message_analysis: str | None = None
     tone: str | None = None
     clarity: str | None = None
     risk: str | None = None

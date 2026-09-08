@@ -339,3 +339,41 @@ def test_agent_needs_draft_two_job_no_invent(client, stub_hits, monkeypatch):
     assert body["hedged"] is True
     assert body["steps"]
     assert all(s["status"] == "skipped_needs_draft" for s in body["steps"])
+
+
+_PNG_1X1 = (
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
+)
+
+
+def test_agent_images_only_allowed(client, stub_hits, monkeypatch):
+    _stub_classifier(monkeypatch, "openers")
+    _stub_generate(
+        monkeypatch,
+        '{"reply": "Opener từ ảnh.", "improved_draft": null, "openers": ["A?", "B?"]}',
+    )
+    sid = client.post("/v1/sessions").json()["id"]
+    response = client.post(
+        f"/v1/sessions/{sid}/agent",
+        json={
+            "message": "",
+            "images": [{"mime_type": "image/png", "data_base64": _PNG_1X1}],
+        },
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["intent"] in ("openers", "profile_context", "ask")
+    assert body.get("openers") or body["reply"]
+
+
+def test_agent_too_many_images(client):
+    sid = client.post("/v1/sessions").json()["id"]
+    shots = [
+        {"mime_type": "image/png", "data_base64": _PNG_1X1} for _ in range(4)
+    ]
+    response = client.post(
+        f"/v1/sessions/{sid}/agent",
+        json={"message": "Gợi ý opener", "images": shots},
+    )
+    assert response.status_code == 400
+    assert response.json().get("code") == "too_many_images"

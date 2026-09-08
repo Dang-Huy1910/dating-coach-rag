@@ -1,12 +1,14 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { api, ApiError } from '../api/client';
-import { SessionKitResponse, SessionResponse } from '../api/types';
+import { ChatTurn, SessionKitResponse, SessionResponse } from '../api/types';
 
 const EMPTY_KIT: SessionKitResponse = {
   improved_bio: null,
   analysis_points: null,
   openers: [],
   improved_message: null,
+  message_draft: null,
+  message_analysis: null,
   tone: null,
   clarity: null,
   risk: null,
@@ -24,6 +26,8 @@ interface SessionContextType {
   error: string | null;
   kit: SessionKitResponse;
   refreshKit: (sessionId?: string | null) => Promise<SessionKitResponse>;
+  chatTurns: ChatTurn[];
+  appendChatTurn: (turn: ChatTurn) => void;
   ensureSession: (forceNew?: boolean) => Promise<string>;
   createNewSession: () => Promise<SessionResponse>;
   executeWithSession: <T>(operation: (sessionId: string) => Promise<T>) => Promise<T>;
@@ -44,6 +48,7 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [kit, setKit] = useState<SessionKitResponse>(EMPTY_KIT);
+  const [chatTurns, setChatTurns] = useState<ChatTurn[]>([]);
 
   const checkHealth = useCallback(async () => {
     try {
@@ -89,6 +94,7 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
     try {
       const newSession = await api.createSession();
       setSession(newSession);
+      setChatTurns([]);
       if (newSession.disclaimer) {
         setDisclaimer(newSession.disclaimer);
       }
@@ -99,6 +105,7 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
       const message = err instanceof ApiError ? err.detail : 'Không thể khởi tạo phiên tư vấn.';
       setError(message);
       setKit(EMPTY_KIT);
+      setChatTurns([]);
       throw err;
     } finally {
       setIsLoading(false);
@@ -141,8 +148,13 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
     setSession(null);
     setKit(EMPTY_KIT);
+    setChatTurns([]);
     await createNewSession();
   }, [session, createNewSession]);
+
+  const appendChatTurn = useCallback((turn: ChatTurn) => {
+    setChatTurns((prev) => [...prev, turn]);
+  }, []);
 
   useEffect(() => {
     checkHealth();
@@ -167,6 +179,8 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
         error,
         kit,
         refreshKit,
+        chatTurns,
+        appendChatTurn,
         ensureSession,
         createNewSession,
         executeWithSession,

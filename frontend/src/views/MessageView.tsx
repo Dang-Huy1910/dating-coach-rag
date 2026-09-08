@@ -89,23 +89,29 @@ export const MessageView: React.FC<MessageViewProps> = ({ onToast }) => {
   const [hydratedKey, setHydratedKey] = useState<string | null>(null);
 
   useEffect(() => {
-    const improved = kit.improved_message?.trim();
-    if (!improved) {
+    const original = kit.message_draft?.trim() || '';
+    const improved = kit.improved_message?.trim() || '';
+    if (!original && !improved) {
       return;
     }
-    const key = `${kit.updated_at ?? ''}|${improved}`;
+    const key = `${kit.updated_at ?? ''}|${original}|${improved}`;
     if (key === hydratedKey) {
       return;
     }
     setHydratedKey(key);
+    if (original) {
+      setDraft(original);
+    }
     setCoachReply({
-      reply: 'Đã điền từ phiên coach — bạn có thể phân tích lại nếu muốn.',
+      reply:
+        kit.message_analysis?.trim() ||
+        'Đã điền từ phiên coach — bạn có thể phân tích lại nếu muốn.',
       citations: [],
       refused: false,
       hedged: false,
       disclaimer: '',
       intent: 'analyze_message',
-      improved_draft: improved,
+      improved_draft: improved || null,
       tone: kit.tone ?? null,
       clarity: kit.clarity ?? null,
       risk: kit.risk ?? null,

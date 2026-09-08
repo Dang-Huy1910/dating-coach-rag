@@ -34,6 +34,7 @@ def apply_reply_to_kit(
     store: SessionStore,
     session_id: str,
     reply: CoachReply,
+    user_text: str = "",
 ) -> list[str]:
     """Write successful artifacts into independent kit slots. Returns slot names written."""
     if reply.refused:
@@ -67,9 +68,16 @@ def apply_reply_to_kit(
             written.append(_SLOT_OPENERS)
 
     if _step_completed(reply, "analyze_message"):
-        draft = (reply.improved_draft or "").strip()
-        if draft:
-            kit.improved_message = draft
+        original = (user_text or "").strip()
+        improved = (reply.improved_draft or "").strip()
+        analysis = (reply.reply or "").strip()
+        if original or improved:
+            if original:
+                kit.message_draft = original
+            if improved:
+                kit.improved_message = improved
+            if analysis:
+                kit.message_analysis = analysis
             kit.tone = (reply.tone or None)
             kit.clarity = (reply.clarity or None)
             kit.risk = (reply.risk or None)

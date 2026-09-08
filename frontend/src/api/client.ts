@@ -11,6 +11,7 @@ import {
   KnowledgeReindexResponse,
   KnowledgeUploadResponse,
   ProfileContextRequest,
+  ProfileImage,
   SessionKitResponse,
   SessionResponse,
   PersonaProfile,
@@ -155,8 +156,12 @@ export const api = {
     });
   },
 
-  askAgent: async (sessionId: string, message: string): Promise<CoachReply> => {
-    const body: AgentRequest = { message, stream: false };
+  askAgent: async (
+    sessionId: string,
+    message: string,
+    images?: ProfileImage[],
+  ): Promise<CoachReply> => {
+    const body: AgentRequest = { message, stream: false, images: images?.length ? images : undefined };
     return request<CoachReply>(`/v1/sessions/${sessionId}/agent`, {
       method: 'POST',
       body: JSON.stringify(body),

@@ -14,6 +14,7 @@ from backend.app.agent.extras import (
     PROFILE_CONTEXT_EXTRA,
     REWRITE_BIO_EXTRA,
 )
+from backend.app.agent.classify import IMAGE_OPENER_FALLBACK
 from backend.app.agent.run import iter_agent_events, run_agent
 from backend.app.coach import IndexNotReadyError, LLMProviderError, handle
 from backend.app.config import DISCLAIMER_TEXT
@@ -168,8 +169,15 @@ def _emit_reply(session_id: str, intent, reply: CoachReply, started: float) -> N
     )
 
 
-def _with_kit(request: Request, session_id: str, reply: CoachReply) -> CoachReply:
-    slots = apply_reply_to_kit(_store(request), session_id, reply)
+def _with_kit(
+    request: Request,
+    session_id: str,
+    reply: CoachReply,
+    user_text: str = "",
+) -> CoachReply:
+    slots = apply_reply_to_kit(
+        _store(request), session_id, reply, user_text=user_text
+    )
     return reply.model_copy(update={"kit_updated": slots or None})
 
 
@@ -180,13 +188,15 @@ def _kit_response(session) -> SessionKitResponse:
         slots.append("bio")
     if kit.openers:
         slots.append("openers")
-    if kit.improved_message:
+    if kit.improved_message or kit.message_draft:
         slots.append("message")
     return SessionKitResponse(
         improved_bio=kit.improved_bio,
         analysis_points=kit.analysis_points,
         openers=list(kit.openers),
         improved_message=kit.improved_message,
+        message_draft=kit.message_draft,
+        message_analysis=kit.message_analysis,
         tone=kit.tone,
         clarity=kit.clarity,
         risk=kit.risk,
@@ -223,7 +233,7 @@ def _run(
         raise HTTPException(status_code=exc.status_code, detail=str(exc)) from exc
     except RuntimeError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
-    reply = _with_kit(request, session_id, reply)
+    reply = _with_kit(request, session_id, reply, user_text=user_text)
     _emit_reply(session_id, intent, reply, started)
     return reply
 
@@ -245,7 +255,7 @@ def ask(session_id: UUID, body: AskRequest, request: Request):
                 intent="ask",
                 user_text=text,
             )
-            reply = _with_kit(request, sid, reply)
+            reply = _with_kit(request, sid, reply, user_text=text)
             _emit_reply(sid, "ask", reply, started)
             for citation in reply.citations:
                 yield {
@@ -265,14 +275,32 @@ def ask(session_id: UUID, body: AskRequest, request: Request):
 @router.post("/v1/sessions/{session_id}/agent", response_model=CoachReply)
 def agent(session_id: UUID, body: AgentRequest, request: Request):
     """Unified-chat router: safety → classify → 1–4 existing capabilities (P2)."""
-    text = _require_text(body.message)
+    images = list(body.images or [])
+    image_code, image_detail = validate_images(images)
+    if image_code and image_detail:
+        return _json_error(400, image_detail, image_code)
+    text = (body.message or "").strip()
+    if not text and not images:
+        raise HTTPException(status_code=400, detail="Hãy nhập nội dung hoặc thêm ảnh trước.")
+    if len(text) > 8000:
+        raise HTTPException(
+            status_code=400,
+            detail="Nội dung quá dài, hãy rút ngắn dưới 8000 ký tự.",
+        )
+    if not text:
+        text = IMAGE_OPENER_FALLBACK
     sid = str(session_id)
     _session_or_404(request, sid)
     started = time.perf_counter()
 
     def _execute() -> CoachReply:
         try:
-            return run_agent(store=_store(request), session_id=sid, message=text)
+            return run_agent(
+                store=_store(request),
+                session_id=sid,
+                message=text,
+                images=images,
+            )
         except IndexNotReadyError as exc:
             raise HTTPException(
                 status_code=400,
@@ -289,7 +317,10 @@ def agent(session_id: UUID, body: AgentRequest, request: Request):
             reply: CoachReply | None = None
             try:
                 for kind, payload in iter_agent_events(
-                    store=_store(request), session_id=sid, message=text
+                    store=_store(request),
+                    session_id=sid,
+                    message=text,
+                    images=images,
                 ):
                     if kind == "step" and isinstance(payload, AgentStep):
                         yield {
@@ -310,7 +341,7 @@ def agent(session_id: UUID, body: AgentRequest, request: Request):
 
             if reply is None:
                 raise HTTPException(status_code=502, detail="Agent did not complete.")
-            reply = _with_kit(request, sid, reply)
+            reply = _with_kit(request, sid, reply, user_text=text)
             _emit_reply(sid, reply.intent, reply, started)
             for citation in reply.citations:
                 yield {
@@ -325,7 +356,7 @@ def agent(session_id: UUID, body: AgentRequest, request: Request):
 
         return EventSourceResponse(events())
 
-    reply = _with_kit(request, sid, _execute())
+    reply = _with_kit(request, sid, _execute(), user_text=text)
     _emit_reply(sid, reply.intent, reply, started)
     return reply
 

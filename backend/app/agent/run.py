@@ -20,7 +20,14 @@ from backend.app.agent.extras import (
 from backend.app.agent.labels import intent_label
 from backend.app.coach import _refusal_reply, handle
 from backend.app.config import DISCLAIMER_TEXT
-from backend.app.models import AgentStep, Citation, CoachReply, Intent, ProfileContextRequest
+from backend.app.models import (
+    AgentStep,
+    Citation,
+    CoachReply,
+    Intent,
+    ProfileContextRequest,
+    ProfileImage,
+)
 from backend.app.public_fetch import (
     classify_profile_url,
     fetch_public_profile,
@@ -111,13 +118,24 @@ def extract_fetchable_url(message: str) -> str | None:
     return None
 
 
-def _build_profile_request(message: str) -> ProfileContextRequest:
+_IMAGE_OPENERS_EXTRA = (
+    " Screenshots of a public profile/post the user already saw are attached. "
+    "Use visible vibe/text in the images to write at least two distinct openers. "
+    "Do not identify faces, invent follower counts, or claim a live profile load."
+)
+
+
+def _build_profile_request(
+    message: str,
+    images: list[ProfileImage] | None = None,
+) -> ProfileContextRequest:
     url = extract_fetchable_url(message)
     visible = message
     body = ProfileContextRequest(
         visible_text=visible,
         question=message,
         profile_url=url,
+        images=list(images or []),
     )
     if url:
         fetched = fetch_public_profile(url)
@@ -266,10 +284,14 @@ def _run_one_job(
     intent: Intent,
     message: str,
     user_text: str,
+    images: list[ProfileImage] | None = None,
 ) -> CoachReply:
     extra = _EXTRAS.get(intent, "")
+    vision = list(images or [])
+    if vision and intent == "openers":
+        extra = (extra + _IMAGE_OPENERS_EXTRA).strip()
     if intent == "profile_context":
-        profile_request = _build_profile_request(message)
+        profile_request = _build_profile_request(message, images=vision)
         return handle(
             store=store,
             session_id=session_id,
@@ -286,6 +308,7 @@ def _run_one_job(
         user_text=user_text,
         extra=extra,
         record_turn=False,
+        images=vision or None,
     )
 
 
@@ -293,9 +316,11 @@ def iter_agent_events(
     store: SessionStore,
     session_id: str,
     message: str,
+    images: list[ProfileImage] | None = None,
 ) -> Iterator[tuple[str, AgentStep | CoachReply]]:
     """Yield ("step", AgentStep) before/as each job settles, then ("done", CoachReply)."""
-    decision: RoutingDecision = classify_message(message)
+    vision = list(images or [])
+    decision: RoutingDecision = classify_message(message, has_images=bool(vision))
 
     if decision.blocked and decision.safety is not None:
         reply = _refusal_reply("ask", decision.safety)
@@ -343,6 +368,7 @@ def iter_agent_events(
             intent=intent,
             message=message,
             user_text=user_text,
+            images=vision,
         )
 
         status: str = "refused" if job_reply.refused else "completed"
@@ -370,10 +396,13 @@ def run_agent(
     session_id: str,
     message: str,
     on_step: StepCallback | None = None,
+    images: list[ProfileImage] | None = None,
 ) -> CoachReply:
     """Safety → classify → 1..n handle() (or ask-to-paste / refuse); merge one CoachReply."""
     reply: CoachReply | None = None
-    for kind, payload in iter_agent_events(store, session_id, message):
+    for kind, payload in iter_agent_events(
+        store, session_id, message, images=images
+    ):
         if kind == "step" and on_step is not None and isinstance(payload, AgentStep):
             on_step(payload)
         elif kind == "done" and isinstance(payload, CoachReply):

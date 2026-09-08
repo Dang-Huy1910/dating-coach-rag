@@ -58,11 +58,22 @@ export interface SessionKitResponse {
   analysis_points?: string[] | null;
   openers: string[];
   improved_message: string | null;
+  message_draft?: string | null;
+  message_analysis?: string | null;
   tone?: string | null;
   clarity?: string | null;
   risk?: string | null;
   updated_at?: string | null;
   slots_filled: string[];
+}
+
+/** One unified-chat turn in this sitting (survives mode/tab switches). */
+export interface ChatTurn {
+  id: string;
+  userQuestion: string;
+  timestamp: string;
+  coachReply: CoachReply;
+  imagePreviews?: string[];
 }
 
 export interface ErrorResponse {
@@ -78,6 +89,7 @@ export interface AskRequest {
 export interface AgentRequest {
   message: string;
   stream?: boolean;
+  images?: ProfileImage[];
 }
 
 export interface DraftRequest {

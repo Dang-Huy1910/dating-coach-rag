@@ -41,13 +41,23 @@ class AskRequest(BaseModel):
     stream: bool = False
 
 
+class ProfileImage(BaseModel):
+    """Screenshot the user already saw. Request-scoped only — never persisted."""
+
+    mime_type: str
+    data_base64: str
+    caption: str | None = Field(default=None, max_length=2000)
+    comments: str | None = Field(default=None, max_length=4000)
+
+
 class AgentRequest(BaseModel):
-    """Unified-chat message for coach router (008/009)."""
+    """Unified-chat message for coach router (008/009). Images are request-scoped."""
 
     model_config = ConfigDict(extra="forbid")
 
-    message: str = Field(min_length=1, max_length=8000)
+    message: str = Field(default="", max_length=8000)
     stream: bool = False
+    images: list[ProfileImage] = Field(default_factory=list)
 
 
 class DraftRequest(BaseModel):
@@ -57,15 +67,6 @@ class DraftRequest(BaseModel):
 
 class OpenersRequest(BaseModel):
     context: str = Field(min_length=1, max_length=8000)
-
-
-class ProfileImage(BaseModel):
-    """Screenshot the user already saw. Request-scoped only — never persisted."""
-
-    mime_type: str
-    data_base64: str
-    caption: str | None = Field(default=None, max_length=2000)
-    comments: str | None = Field(default=None, max_length=4000)
 
 
 class ProfileContextRequest(BaseModel):
@@ -126,6 +127,8 @@ class SessionKitResponse(BaseModel):
     analysis_points: list[str] | None = None
     openers: list[str] = Field(default_factory=list)
     improved_message: str | None = None
+    message_draft: str | None = None
+    message_analysis: str | None = None
     tone: str | None = None
     clarity: str | None = None
     risk: str | None = None

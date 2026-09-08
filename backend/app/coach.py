@@ -467,6 +467,7 @@ def handle(
     extra: str = "",
     profile_request: ProfileContextRequest | None = None,
     record_turn: bool = True,
+    images: list[ProfileImage] | None = None,
 ) -> CoachReply:
     if intent == "profile_context" and profile_request is not None:
         return _handle_profile_context(
@@ -505,7 +506,10 @@ def handle(
         history=_history(store, session_id),
         extra=extra,
     )
-    parsed = _parse_model_json(complete(prompt))
+    vision = list(images or [])
+    parsed = _parse_model_json(
+        complete(prompt, images=vision) if vision else complete(prompt)
+    )
     openers = parsed.get("openers")
     opener_list = [str(x) for x in openers] if isinstance(openers, list) else None
     if intent == "openers" and opener_list and len(opener_list) < 2:

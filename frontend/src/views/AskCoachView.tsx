@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useSession } from '../context/SessionContext';
 import { api, ApiError } from '../api/client';
-import { Citation, CoachReply } from '../api/types';
+import { Citation, ProfileImage } from '../api/types';
 import { CitationModal } from '../components/CitationModal';
 import { CoachBubble } from '../components/CoachBubble';
 import { CopyReadyCard } from '../components/CopyReadyCard';
@@ -10,16 +10,35 @@ import {
   AlertCircle,
   ArrowUp,
   BookOpen,
+  ImagePlus,
   Lock,
   PenTool,
   Sparkles,
+  X,
 } from 'lucide-react';
 
-interface ChatTurn {
+const MAX_SCREENSHOTS = 3;
+const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
+
+type LocalShot = {
   id: string;
-  userQuestion: string;
-  timestamp: string;
-  coachReply: CoachReply;
+  file: File;
+  previewUrl: string;
+};
+
+async function fileToProfileImage(shot: LocalShot): Promise<ProfileImage> {
+  const dataUrl = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ''));
+    reader.onerror = () => reject(new Error('Không đọc được ảnh.'));
+    reader.readAsDataURL(shot.file);
+  });
+  const comma = dataUrl.indexOf(',');
+  return {
+    mime_type: shot.file.type,
+    data_base64: comma >= 0 ? dataUrl.slice(comma + 1) : dataUrl,
+  };
 }
 
 interface AskCoachViewProps {
@@ -51,14 +70,16 @@ function kitSavedMessage(slots: string[] | null | undefined): string | null {
 }
 
 export const AskCoachView: React.FC<AskCoachViewProps> = ({ initialPrompt, onToast }) => {
-  const { executeWithSession, indexReady, refreshKit } = useSession();
-  const [messages, setMessages] = useState<ChatTurn[]>([]);
+  const { executeWithSession, indexReady, refreshKit, chatTurns, appendChatTurn } = useSession();
+  const messages = chatTurns;
   const [inputValue, setInputValue] = useState<string>(initialPrompt || '');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [activeCitation, setActiveCitation] = useState<Citation | null>(null);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [shots, setShots] = useState<LocalShot[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const starterPrompts = [
     'Bio hẹn hò ngắn nên viết thế nào?',
@@ -81,10 +102,80 @@ export const AskCoachView: React.FC<AskCoachViewProps> = ({ initialPrompt, onToa
     scrollToBottom();
   }, [messages, isSubmitting]);
 
+  const addFiles = (files: File[]) => {
+    if (!files.length) return;
+    const next: LocalShot[] = [];
+    for (const file of files) {
+      if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
+        setErrorMessage('Ảnh phải là JPEG, PNG hoặc WebP — screenshot bài/profile bạn đã thấy.');
+        continue;
+      }
+      if (file.size > MAX_IMAGE_BYTES) {
+        setErrorMessage('Ảnh quá lớn, hãy gửi screenshot dưới 2MB mỗi tấm.');
+        continue;
+      }
+      next.push({
+        id: `${file.name}-${file.size}-${file.lastModified}-${Math.random()}`,
+        file,
+        previewUrl: URL.createObjectURL(file),
+      });
+    }
+    setShots((current) => {
+      const room = MAX_SCREENSHOTS - current.length;
+      if (room <= 0) {
+        next.forEach((shot) => URL.revokeObjectURL(shot.previewUrl));
+        setErrorMessage(`Chỉ gửi tối đa ${MAX_SCREENSHOTS} ảnh mỗi lần.`);
+        return current;
+      }
+      const accepted = next.slice(0, room);
+      next.slice(room).forEach((shot) => URL.revokeObjectURL(shot.previewUrl));
+      if (next.length > room) {
+        setErrorMessage(`Chỉ gửi tối đa ${MAX_SCREENSHOTS} ảnh mỗi lần.`);
+      }
+      return [...current, ...accepted];
+    });
+  };
+
+  const removeShot = (id: string) => {
+    setShots((current) => {
+      const victim = current.find((shot) => shot.id === id);
+      if (victim) URL.revokeObjectURL(victim.previewUrl);
+      return current.filter((shot) => shot.id !== id);
+    });
+  };
+
+  useEffect(() => {
+    const onPaste = (event: ClipboardEvent) => {
+      const items = event.clipboardData?.items;
+      if (!items?.length) return;
+      const files: File[] = [];
+      for (const item of Array.from(items)) {
+        if (item.type.startsWith('image/')) {
+          const file = item.getAsFile();
+          if (file) files.push(file);
+        }
+      }
+      if (!files.length) return;
+      event.preventDefault();
+      addFiles(files);
+      onToast(`Đã dán ${files.length} ảnh. Gửi kèm câu “gợi ý opener” nếu muốn.`);
+    };
+    window.addEventListener('paste', onPaste);
+    return () => window.removeEventListener('paste', onPaste);
+  }, [onToast]);
+
+  useEffect(() => {
+    return () => {
+      shots.forEach((shot) => URL.revokeObjectURL(shot.previewUrl));
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleSend = async (questionText?: string) => {
     const textToSend = (questionText || inputValue).trim();
-    if (!textToSend) {
-      setErrorMessage('Hãy nhập câu hỏi trước khi gửi.');
+    const pendingShots = shots;
+    if (!textToSend && pendingShots.length === 0) {
+      setErrorMessage('Hãy nhập câu hỏi hoặc dán/thêm ảnh trước khi gửi.');
       return;
     }
 
@@ -92,8 +183,12 @@ export const AskCoachView: React.FC<AskCoachViewProps> = ({ initialPrompt, onToa
     setIsSubmitting(true);
 
     try {
+      const images = pendingShots.length
+        ? await Promise.all(pendingShots.map(fileToProfileImage))
+        : [];
+      const previews = pendingShots.map((shot) => shot.previewUrl);
       const reply = await executeWithSession(async (sid) => {
-        const result = await api.askAgent(sid, textToSend);
+        const result = await api.askAgent(sid, textToSend, images);
         await refreshKit(sid);
         return result;
       });
@@ -101,16 +196,15 @@ export const AskCoachView: React.FC<AskCoachViewProps> = ({ initialPrompt, onToa
       const now = new Date();
       const timeString = `${now.getHours()}:${now.getMinutes().toString().padStart(2, '0')}`;
 
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: Math.random().toString(36).substring(2, 9),
-          userQuestion: textToSend,
-          timestamp: timeString,
-          coachReply: reply,
-        },
-      ]);
+      appendChatTurn({
+        id: Math.random().toString(36).substring(2, 9),
+        userQuestion: textToSend || 'Gợi ý opener từ ảnh đã gửi',
+        timestamp: timeString,
+        coachReply: reply,
+        imagePreviews: previews.length ? previews : undefined,
+      });
       setInputValue('');
+      setShots([]);
     } catch (err: unknown) {
       const msg = err instanceof ApiError ? err.detail : 'Không thể gửi câu hỏi đến Coach.';
       setErrorMessage(msg);
@@ -144,10 +238,9 @@ export const AskCoachView: React.FC<AskCoachViewProps> = ({ initialPrompt, onToa
               Hỏi coach giao tiếp hẹn hò
             </h1>
             <p className="text-sm text-charcoal-muted max-w-2xl leading-relaxed">
-              Gõ tự nhiên — không cần chọn tab Bio / Tin nhắn / Opener. Coach có thể chạy tới bốn năng lực
-              trong một lượt (ví dụ sửa bio rồi gợi ý opener), vẫn trích nguồn từ thư viện đã kiểm duyệt.
-              Các màn chuyên biệt vẫn dùng được khi bạn muốn form riêng. Bản nháp chỉ để bạn sao chép —
-              app không gửi lên ứng dụng hẹn hò.
+              Gõ tự nhiên — không cần chọn tab Bio / Tin nhắn / Opener. Có thể dán hoặc đính screenshot
+              profile/bài viết để gợi ý opener. Coach có thể chạy tới bốn năng lực trong một lượt.
+              App không gửi tin lên ứng dụng hẹn hò.
             </p>
           </div>
           <div className="inline-flex items-center gap-2 text-xs font-mono text-charcoal-muted bg-paper-card px-3.5 py-1.5 rounded-full border border-paper-border shadow-xs shrink-0">
@@ -261,7 +354,19 @@ export const AskCoachView: React.FC<AskCoachViewProps> = ({ initialPrompt, onToa
             <div key={msg.id} className="space-y-6 animate-in fade-in duration-300">
               {/* User Bubble */}
               <div className="flex flex-col items-end gap-1.5 max-w-[85%] ml-auto">
-                <div className="bg-magenta-600 text-white rounded-2xl rounded-tr-none px-5 py-3.5 shadow-sm text-sm sm:text-base leading-relaxed">
+                <div className="bg-magenta-600 text-white rounded-2xl rounded-tr-none px-5 py-3.5 shadow-sm text-sm sm:text-base leading-relaxed space-y-2">
+                  {msg.imagePreviews && msg.imagePreviews.length > 0 ? (
+                    <div className="flex flex-wrap gap-2 justify-end">
+                      {msg.imagePreviews.map((src, idx) => (
+                        <img
+                          key={`${msg.id}-img-${idx}`}
+                          src={src}
+                          alt=""
+                          className="h-16 w-16 rounded-lg object-cover border border-white/30"
+                        />
+                      ))}
+                    </div>
+                  ) : null}
                   <p>{msg.userQuestion}</p>
                 </div>
                 <div className="flex items-center gap-2 text-[11px] text-charcoal-muted px-1 font-mono">
@@ -438,8 +543,30 @@ export const AskCoachView: React.FC<AskCoachViewProps> = ({ initialPrompt, onToa
               e.preventDefault();
               handleSend();
             }}
-            className="relative flex items-center w-full bg-paper-card rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.06)] border border-paper-border p-2 transition-shadow focus-within:shadow-glow-magenta"
+            className="relative flex flex-col w-full bg-paper-card rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.06)] border border-paper-border p-2 transition-shadow focus-within:shadow-glow-magenta"
           >
+            {shots.length > 0 ? (
+              <div className="flex flex-wrap gap-2 px-2 pt-1 pb-2">
+                {shots.map((shot) => (
+                  <div key={shot.id} className="relative">
+                    <img
+                      src={shot.previewUrl}
+                      alt=""
+                      className="h-16 w-16 rounded-lg object-cover border border-paper-border"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeShot(shot.id)}
+                      className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-charcoal text-white flex items-center justify-center cursor-pointer"
+                      aria-label="Gỡ ảnh"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+            <div className="flex items-center w-full">
             <div className="hidden sm:flex items-center gap-1.5 pl-3 pr-2 text-charcoal-muted border-r border-paper-border my-1">
               <Sparkles className="w-4 h-4 text-magenta-600" />
               <span className="text-xs font-medium">Chat thống nhất</span>
@@ -449,23 +576,46 @@ export const AskCoachView: React.FC<AskCoachViewProps> = ({ initialPrompt, onToa
               type="text"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
-              placeholder="Hỏi, dán bio/tin nhắn, hoặc mô tả ngữ cảnh opener…"
+              placeholder="Hỏi, dán bio/tin, Ctrl+V ảnh profile để gợi ý opener…"
               disabled={isSubmitting || !indexReady}
               className="flex-1 w-full bg-transparent px-4 py-2 text-sm text-charcoal placeholder:text-charcoal-faint focus:outline-none"
             />
 
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              multiple
+              className="hidden"
+              onChange={(e) => {
+                addFiles(Array.from(e.target.files || []));
+                e.target.value = '';
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isSubmitting || !indexReady || shots.length >= MAX_SCREENSHOTS}
+              className="h-10 w-10 rounded-xl text-magenta-700 hover:bg-magenta-50 flex items-center justify-center cursor-pointer disabled:opacity-40"
+              aria-label="Thêm ảnh"
+              title="Thêm screenshot (tối đa 3)"
+            >
+              <ImagePlus className="w-5 h-5" />
+            </button>
+
             <button
               type="submit"
-              disabled={isSubmitting || !inputValue.trim() || !indexReady}
+              disabled={isSubmitting || (!inputValue.trim() && shots.length === 0) || !indexReady}
               className="h-10 px-4 rounded-xl bg-magenta-600 hover:bg-magenta-700 text-white flex items-center justify-center gap-1 text-xs font-semibold transition-all disabled:opacity-40 shadow-sm cursor-pointer active:scale-95"
             >
               <span>{isSubmitting ? 'Đang đọc...' : 'Gửi'}</span>
               <ArrowUp className="w-4 h-4" />
             </button>
+            </div>
           </form>
 
           <div className="flex items-center justify-between px-3 mt-2 text-[11px] text-charcoal-muted">
-            <span>Nhấn Enter để gửi</span>
+            <span>Enter gửi · Ctrl+V dán ảnh</span>
             <div className="flex items-center gap-1.5">
               <Lock className="w-3 h-3 text-magenta-600" />
               <span>Bảo mật & Phi ẩn danh cục bộ</span>

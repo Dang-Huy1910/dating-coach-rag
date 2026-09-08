@@ -48,9 +48,10 @@ Rules:
 - Put ask last when mixed with specialized jobs.
 - needs_draft=true when a specialized intent lacks usable paste/context:
   - rewrite_bio / analyze_message: no draft text beyond the request itself
-  - openers: no usable first-contact context
-  - profile_context: only a handle/URL (esp. Instagram/TikTok) with no pasted visible text
-- needs_draft=false for ask-only, or when a usable draft/context/paste is present.
+  - openers: no usable first-contact context AND no screenshots
+  - profile_context: only a handle/URL (esp. Instagram/TikTok) with no pasted visible text AND no screenshots
+- needs_draft=false for ask-only, when a usable draft/context/paste is present, or when screenshots are attached (screenshots count as context for openers / profile_context).
+- If screenshots are attached and the user asks for openers (or sends little/no text), prefer ["openers"].
 - Chat simulation / roleplay-as-the-other-person is NOT an intent here → use ask.
 
 Return JSON only (preferred):
@@ -59,9 +60,17 @@ Return JSON only (preferred):
 Legacy single-intent form is also accepted:
 {{"intent": "ask", "needs_draft": false}}
 
+{image_note}
 User message:
 {message}
 """
+
+IMAGE_OPENER_FALLBACK = "Gợi ý opener từ ảnh profile/screenshot mình đã thấy."
+
+_OPENER_HINT = re.compile(
+    r"opener|mở lời|câu mở|tin nhắn đầu|first message|screenshot|ảnh (này|profile|chụp)",
+    re.I,
+)
 
 
 @dataclass(frozen=True)
@@ -148,7 +157,20 @@ def parse_classifier_json(raw: str) -> ParsedPlan:
     return ParsedPlan(intents=intents, needs_draft=needs_draft, truncated=truncated)
 
 
-def classify_message(text: str) -> RoutingDecision:
+def _prefer_openers_from_images(text: str, intents: list[Intent], has_images: bool) -> list[Intent]:
+    if not has_images:
+        return intents
+    stripped = (text or "").strip()
+    if intents == ["ask"] and (
+        not stripped
+        or stripped == IMAGE_OPENER_FALLBACK
+        or _OPENER_HINT.search(stripped)
+    ):
+        return ["openers"]
+    return intents
+
+
+def classify_message(text: str, *, has_images: bool = False) -> RoutingDecision:
     """Screen for safety first; if blocked skip classify; else one JSON complete() call."""
     verdict = screen(text)
     if not verdict.allowed:
@@ -159,15 +181,28 @@ def classify_message(text: str) -> RoutingDecision:
             safety=verdict,
             truncated=False,
         )
+    image_note = ""
+    if has_images:
+        image_note = (
+            "The user attached screenshot(s) of a public profile/post they already saw. "
+            "That is usable context for openers and profile_context. Set needs_draft=false "
+            "for those jobs. Do not treat images as the user's own bio rewrite unless they say so.\n"
+        )
     raw = complete(
-        CLASSIFIER_PROMPT.format(message=text),
+        CLASSIFIER_PROMPT.format(message=text or "(empty)", image_note=image_note),
         system_prompt=CLASSIFIER_SYSTEM,
         temperature=0.0,
     )
     plan = parse_classifier_json(raw)
+    intents = _prefer_openers_from_images(text, plan.intents, has_images)
+    needs_draft = plan.needs_draft
+    if has_images and any(i in ("openers", "profile_context") for i in intents):
+        needs_draft = False
+    if intents == ["ask"] or all(i == "ask" for i in intents):
+        needs_draft = False
     return RoutingDecision(
-        intents=plan.intents,
-        needs_draft=plan.needs_draft,
+        intents=intents,
+        needs_draft=needs_draft,
         blocked=False,
         safety=None,
         truncated=plan.truncated,

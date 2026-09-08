@@ -160,6 +160,7 @@ def test_analyze_message_fills_message(client, stub_hits, monkeypatch):
 
     kit = client.get(f"/v1/sessions/{sid}/kit").json()
     assert kit["improved_message"] == "Cuối tuần cà phê được không?"
+    assert kit["message_draft"] == "Xem tin này ổn không: Đi chơi không? Trả lời nhanh."
     assert kit["tone"] == "Hơi dồn ép"
     assert "message" in kit["slots_filled"]
 
